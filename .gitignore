@@ -1,0 +1,41 @@
+# Segredos — nunca versionar
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+key.properties
+supabase/.temp/
+
+# Node — so os testes de schema usam, e eles se reinstalam com npm ci
+node_modules/
+
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.g.dart
+*.freezed.dart
+
+# Android
+app/android/.gradle/
+app/android/local.properties
+app/android/app/google-services.json
+
+# iOS
+app/ios/Pods/
+app/ios/.symlinks/
+app/ios/Flutter/Flutter.framework
+app/ios/Flutter/Generated.xcconfig
+app/ios/Runner/GoogleService-Info.plist
+
+# Editor / SO
+.idea/
+*.iml
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+.DS_Store
+Thumbs.db

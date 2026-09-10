@@ -1,0 +1,23 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  errors:
+    # Erro de verdade, nao aviso — codigo morto e import solto nao passam.
+    unused_import: error
+    unused_local_variable: error
+    unused_element: error
+    dead_code: error
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - build/**
+    - android/**
+    - ios/**
+
+linter:
+  rules:
+    public_member_api_docs: false   # app, nao pacote publicado
+    lines_longer_than_80_chars: false
+    # Conflita com avoid_setters_without_getters. Notifier do Riverpod expoe
+    # metodo, nao setter — a regra abaixo perde.
+    use_setters_to_change_properties: false
