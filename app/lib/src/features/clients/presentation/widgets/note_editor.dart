@@ -55,9 +55,6 @@ class _NoteEditorState extends State<NoteEditor> {
     setState(() => _editing = false);
     await widget.onSave(_controller.text);
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(const SnackBar(content: Text('Anotação salva.')));
   }
 
   void _start() {

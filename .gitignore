@@ -31,6 +31,9 @@ app/ios/Flutter/Flutter.framework
 app/ios/Flutter/Generated.xcconfig
 app/ios/Runner/GoogleService-Info.plist
 
+# Prints de referencia — material de estudo, nao codigo
+design/prints/
+
 # Editor / SO
 .idea/
 *.iml

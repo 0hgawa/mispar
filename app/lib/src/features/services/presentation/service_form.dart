@@ -9,7 +9,10 @@ import 'package:marcos_barber/src/features/services/data/service_repository.dart
 import 'package:marcos_barber/src/features/services/domain/service.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/formatters/text.dart';
+import 'package:marcos_barber/src/shared/task_route.dart';
+import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
+import 'package:marcos_barber/src/shared/widgets/confirm.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -23,8 +26,7 @@ class ServiceForm extends ConsumerStatefulWidget {
   final Service? service;
 
   static Future<void> show(BuildContext context, {Service? service}) {
-    return Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => ServiceForm(service: service)));
+    return openTask(context, (_) => ServiceForm(service: service));
   }
 
   @override
@@ -198,13 +200,7 @@ class _ServiceFormState extends ConsumerState<ServiceForm> {
         if (clash != null) {
           if (!mounted) return;
           setState(() => _saving = false);
-          ScaffoldMessenger.of(context)
-            ..clearSnackBars()
-            ..showSnackBar(
-              SnackBar(
-                content: Text('Já existe um serviço chamado ${clash.name}.'),
-              ),
-            );
+          showSnack(context, 'Já existe um serviço chamado ${clash.name}.');
           return;
         }
       }
@@ -226,54 +222,30 @@ class _ServiceFormState extends ConsumerState<ServiceForm> {
 
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text('$name salvo.')));
     } on Object {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          const SnackBar(content: Text('Não consegui salvar. Tente de novo.')),
-        );
+      showSnack(context, 'Não consegui salvar. Tente de novo.');
     }
   }
 
   Future<void> _confirmDelete() async {
     final service = widget.service!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Apagar serviço?'),
-        content: Text(
-          '${service.name} some de vez. Como ninguém usou, nada do '
-          'histórico se perde.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Voltar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(dialogContext).status.alert,
-            ),
-            child: const Text('Apagar'),
-          ),
-        ],
-      ),
+    final confirmed = await askToConfirm(
+      context,
+      title: 'Apagar serviço?',
+      message:
+          '${service.name} some de vez. Como ninguém usou, nada do histórico '
+          'se perde.',
+      confirmLabel: 'Apagar',
     );
 
-    if (confirmed != true) return;
+    if (!confirmed) return;
     await ref.read(serviceRepositoryProvider).delete(service.id);
 
     if (!mounted) return;
     Navigator.of(context).pop();
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text('${service.name} apagado.')));
+    showSnack(context, '${service.name} apagado.');
   }
 
   String _idFrom(String name) =>

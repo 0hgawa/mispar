@@ -353,16 +353,21 @@ class _GapRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    // Vaga que ja terminou nao convida mais: o formulario nao teria horario
+    // para oferecer.
+    final isGone = slot.end.isBefore(DateTime.now());
 
     return Material(
       color: colors.secondaryContainer,
       borderRadius: BorderRadius.circular(Dimens.cardRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () {
-          ref.read(bookingProvider.notifier).startAtSlot(slot.start);
-          unawaited(context.push(Routes.newAppointment));
-        },
+        onTap: isGone
+            ? null
+            : () {
+                ref.read(bookingProvider.notifier).startAtSlot(slot.start);
+                unawaited(context.push(Routes.newAppointment));
+              },
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: Dimens.cardPadding,
@@ -383,7 +388,9 @@ class _GapRow extends ConsumerWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '${formatDuration(slot.end.difference(slot.start))} livre',
+                  isGone
+                      ? '${formatDuration(slot.end.difference(slot.start))} sem ninguém'
+                      : '${formatDuration(slot.end.difference(slot.start))} livre',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: colors.onSurfaceVariant,

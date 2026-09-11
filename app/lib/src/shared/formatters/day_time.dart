@@ -51,6 +51,24 @@ String formatTimeAgo(DateTime moment) {
   return years == 1 ? 'há 1 ano' : 'há $years anos';
 }
 
+/// "Hoje", "Ontem" ou "Sábado, 6 de setembro".
+///
+/// Cabeçalho de um dia numa lista: enquanto o dia tem nome próprio, o nome
+/// ganha da data — ninguém precisa converter "10 de setembro" para saber que é
+/// hoje.
+String formatDayHeading(DateTime day, {DateTime? now}) {
+  final today = now ?? DateTime.now();
+  final days = DateTime(today.year, today.month, today.day)
+      .difference(DateTime(day.year, day.month, day.day))
+      .inDays;
+
+  return switch (days) {
+    0 => 'Hoje',
+    1 => 'Ontem',
+    _ => formatLongDay(day),
+  };
+}
+
 /// "10/09" — data curta para a linha do histórico.
 String formatShortDate(DateTime day) {
   final d = day.day.toString().padLeft(2, '0');

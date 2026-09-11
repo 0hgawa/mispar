@@ -4,6 +4,7 @@ import 'package:marcos_barber/src/core/data/database/app_database.dart';
 import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
 import 'package:marcos_barber/src/features/clients/domain/client.dart';
 import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
+import 'package:marcos_barber/src/shared/formatters/phone.dart';
 import 'package:marcos_barber/src/shared/formatters/text.dart';
 
 class ClientRepository {
@@ -104,6 +105,44 @@ class ClientRepository {
           note: row.note,
           isActive: row.active,
         );
+
+  /// Os telefones ja cadastrados, em forma de chave.
+  ///
+  /// Consulta so a coluna do telefone: para saber o que ja existe nao e
+  /// preciso carregar nome, anotacao e data de cada cliente.
+  Future<Set<String>> phoneKeys() async {
+    final column = _db.clients.phone;
+    final rows = await (_db.selectOnly(
+      _db.clients,
+    )..addColumns([column])).get();
+
+    return {
+      for (final row in rows)
+        if (row.read(column) case final phone?) phoneKey(phone),
+    };
+  }
+
+  /// Grava varios clientes de uma vez.
+  ///
+  /// Uma transacao so para a agenda inteira: mil inserts separados travariam
+  /// a tela por segundos.
+  Future<void> importAll(
+    Iterable<({String id, String name, String phone})> people,
+  ) {
+    final now = DateTime.now();
+
+    return _db.batch(
+      (batch) => batch.insertAll(_db.clients, [
+        for (final person in people)
+          ClientsCompanion.insert(
+            id: person.id,
+            name: person.name,
+            phone: person.phone,
+            createdAt: now,
+          ),
+      ]),
+    );
+  }
 
   /// Cadastra alguem que chegou sem marcar.
   Future<void> create({

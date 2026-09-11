@@ -163,11 +163,34 @@ class Booking extends _$Booking {
 Stream<List<Service>> bookableServices(Ref ref) =>
     ref.watch(serviceRepositoryProvider).watchAll();
 
+/// Por que nao sobrou horario para oferecer.
+///
+/// A tela precisa saber a razao para dizer a verdade. "Fechado ou ja cheio"
+/// quando o caso e "o expediente de hoje ja acabou" manda o Marcos procurar
+/// defeito onde nao tem.
+enum NoTimeReason {
+  /// A barbearia nao abre neste dia da semana.
+  closed,
+
+  /// Feriado, medico, viagem.
+  blocked,
+
+  /// E hoje, e todos os horarios que caberiam ja passaram.
+  past,
+
+  /// Tem gente marcada o dia todo.
+  full,
+}
+
+typedef BookableTimes = ({List<DateTime> times, NoTimeReason? reason});
+
 /// Os horarios em que o servico escolhido cabe no dia aberto na agenda.
 @riverpod
-Stream<List<DateTime>> bookableTimes(Ref ref) {
+Stream<BookableTimes> bookableTimes(Ref ref) {
   final service = ref.watch(bookingProvider).service;
-  if (service == null) return Stream.value(const []);
+  if (service == null) {
+    return Stream.value((times: const <DateTime>[], reason: null));
+  }
 
   final draft = ref.watch(bookingProvider);
   final day = draft.day;
@@ -193,12 +216,35 @@ Stream<List<DateTime>> bookableTimes(Ref ref) {
         ? appointments
         : appointments.where((a) => a.id != draft.editingId).toList();
 
-    return availableStarts(
-      buildDaySchedule(day, others, hours: hours, blocks: blocks),
+    final schedule = buildDaySchedule(
+      day,
+      others,
+      hours: hours,
+      blocks: blocks,
+    );
+
+    // Duas contas sobre a mesma grade: o que caberia no dia inteiro, e o que
+    // ainda da para vender. A diferenca entre as duas e o que diz se o dia
+    // encheu ou se so acabou o expediente.
+    final anyTime = availableStarts(schedule, service.duration, step: step);
+    final stillOpen = availableStarts(
+      schedule,
       service.duration,
       step: step,
       // Nao oferece horario que ja passou.
       notBefore: DateTime.now(),
+    );
+
+    if (stillOpen.isNotEmpty) return (times: stillOpen, reason: null);
+
+    return (
+      times: const <DateTime>[],
+      reason: switch (0) {
+        _ when !hours.isOpen => NoTimeReason.closed,
+        _ when blocks.isNotEmpty => NoTimeReason.blocked,
+        _ when anyTime.isNotEmpty => NoTimeReason.past,
+        _ => NoTimeReason.full,
+      },
     );
   });
 }

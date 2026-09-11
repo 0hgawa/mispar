@@ -7,6 +7,8 @@ import 'package:marcos_barber/src/features/reports/data/expense_category_reposit
 import 'package:marcos_barber/src/features/reports/data/expense_repository.dart';
 import 'package:marcos_barber/src/features/reports/domain/expense.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
+import 'package:marcos_barber/src/shared/task_route.dart';
+import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -22,8 +24,7 @@ class ExpenseForm extends ConsumerStatefulWidget {
   final Expense? expense;
 
   static Future<void> show(BuildContext context, {Expense? expense}) {
-    return Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => ExpenseForm(expense: expense)));
+    return openTask(context, (_) => ExpenseForm(expense: expense));
   }
 
   @override
@@ -270,17 +271,10 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
 
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(const SnackBar(content: Text('Despesa lançada.')));
     } on Object {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          const SnackBar(content: Text('Não consegui salvar. Tente de novo.')),
-        );
+      showSnack(context, 'Não consegui salvar. Tente de novo.');
     }
   }
 
@@ -288,9 +282,7 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
     await ref.read(expenseRepositoryProvider).delete(widget.expense!.id);
     if (!mounted) return;
     Navigator.of(context).pop();
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(const SnackBar(content: Text('Despesa apagada.')));
+    showSnack(context, 'Despesa apagada.');
   }
 }
 

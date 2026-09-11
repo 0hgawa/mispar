@@ -7,7 +7,10 @@ import 'package:marcos_barber/src/core/theme/status_colors.dart';
 import 'package:marcos_barber/src/features/reports/data/expense_category_repository.dart';
 import 'package:marcos_barber/src/features/reports/domain/expense.dart';
 import 'package:marcos_barber/src/shared/formatters/text.dart';
+import 'package:marcos_barber/src/shared/task_route.dart';
+import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
+import 'package:marcos_barber/src/shared/widgets/confirm.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -18,11 +21,7 @@ class ExpenseCategoryForm extends ConsumerStatefulWidget {
   final ExpenseCategory? category;
 
   static Future<void> show(BuildContext context, {ExpenseCategory? category}) {
-    return Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ExpenseCategoryForm(category: category),
-      ),
-    );
+    return openTask(context, (_) => ExpenseCategoryForm(category: category));
   }
 
   @override
@@ -164,11 +163,7 @@ class _ExpenseCategoryFormState extends ConsumerState<ExpenseCategoryForm> {
         if (clash != null) {
           if (!mounted) return;
           setState(() => _saving = false);
-          ScaffoldMessenger.of(context)
-            ..clearSnackBars()
-            ..showSnackBar(
-              SnackBar(content: Text('Já existe o tipo ${clash.name}.')),
-            );
+          showSnack(context, 'Já existe o tipo ${clash.name}.');
           return;
         }
       }
@@ -187,54 +182,30 @@ class _ExpenseCategoryFormState extends ConsumerState<ExpenseCategoryForm> {
 
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text('$name salvo.')));
     } on Object {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          const SnackBar(content: Text('Não consegui salvar. Tente de novo.')),
-        );
+      showSnack(context, 'Não consegui salvar. Tente de novo.');
     }
   }
 
   Future<void> _confirmDelete() async {
     final category = widget.category!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Apagar tipo?'),
-        content: Text(
-          '${category.name} some de vez. Como ninguém lançou nada nele, '
-          'nada do Caixa se perde.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Voltar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(dialogContext).status.alert,
-            ),
-            child: const Text('Apagar'),
-          ),
-        ],
-      ),
+    final confirmed = await askToConfirm(
+      context,
+      title: 'Apagar tipo?',
+      message:
+          '${category.name} some de vez. Como ninguém lançou nada nele, nada '
+          'do Caixa se perde.',
+      confirmLabel: 'Apagar',
     );
 
-    if (confirmed != true) return;
+    if (!confirmed) return;
     await ref.read(expenseCategoryRepositoryProvider).delete(category.id);
 
     if (!mounted) return;
     Navigator.of(context).pop();
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text('${category.name} apagado.')));
+    showSnack(context, '${category.name} apagado.');
   }
 
   String _idFrom(String name) =>

@@ -165,6 +165,17 @@ abstract final class AppTheme {
         shape: const CircleBorder(),
       ),
 
+      // Canto mais redondo e borda fina: o quadrado duro do Material brigava
+      // com o resto, que e todo arredondado.
+      checkboxTheme: CheckboxThemeData(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(6)),
+        ),
+        // Nem o traco duro do Material, nem a borda de divisoria, que some no
+        // fundo claro: um meio-termo que ainda da para achar com o olho.
+        side: BorderSide(color: inkSoft.withValues(alpha: 0.4), width: 1.5),
+      ),
+
       dividerTheme: DividerThemeData(color: edge, space: 1, thickness: 1),
 
       bottomSheetTheme: BottomSheetThemeData(
@@ -188,6 +199,13 @@ abstract final class AppTheme {
   static TextTheme _textTheme(TextTheme base, Color ink, Color soft) {
     return base
         .copyWith(
+          // O numero grande de dinheiro: o unico lugar que passa de 24.
+          displaySmall: const TextStyle(
+            fontSize: 40,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -1.2,
+            height: 1.1,
+          ),
           // Titulo da tela.
           headlineMedium: const TextStyle(
             fontSize: 24,

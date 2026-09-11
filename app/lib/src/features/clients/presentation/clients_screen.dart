@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:marcos_barber/src/core/router/app_router.dart';
 import 'package:marcos_barber/src/core/theme/app_colors.dart';
 import 'package:marcos_barber/src/features/clients/presentation/clients_view_model.dart';
+import 'package:marcos_barber/src/features/clients/presentation/import_contacts_screen.dart';
 import 'package:marcos_barber/src/features/clients/presentation/widgets/client_card.dart';
 
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
@@ -80,9 +81,26 @@ class _Header extends ConsumerWidget {
         .watch(clientListProvider)
         .maybeWhen(data: (list) => list.length, orElse: () => 0);
 
-    return ScreenTitle(
-      title: 'Clientes',
-      subtitle: count == 1 ? '1 pessoa' : '$count pessoas',
+    return Row(
+      children: [
+        Expanded(
+          child: ScreenTitle(
+            title: 'Clientes',
+            subtitle: count == 1 ? '1 pessoa' : '$count pessoas',
+          ),
+        ),
+        // Com a lista cheia o estado vazio some, e com ele o caminho para a
+        // agenda do celular. Ele continua aqui: contato novo no telefone é
+        // cliente que ainda não entrou.
+        Padding(
+          padding: const EdgeInsets.only(right: Dimens.gapSmall),
+          child: IconButton(
+            icon: const Icon(Symbols.download_rounded, weight: 500),
+            tooltip: 'Trazer da agenda do celular',
+            onPressed: () => ImportContactsScreen.show(context),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -174,12 +192,17 @@ class _EmptyResult extends StatelessWidget {
       );
     }
 
-    return const EmptyState(
+    return EmptyState(
       icon: Symbols.group_rounded,
       title: 'Nenhum cliente ainda',
       message:
-          'Quem marcar pelo WhatsApp entra aqui sozinho. Para cadastrar na '
-          'mão, use o botão de baixo.',
+          'Traga quem já está na agenda do celular. Digitar um por um não '
+          'acontece — e o robô do WhatsApp precisa do telefone de cada um.',
+      action: FilledButton.icon(
+        onPressed: () => ImportContactsScreen.show(context),
+        icon: const Icon(Symbols.download_rounded, size: 20, weight: 600),
+        label: const Text('Trazer da agenda'),
+      ),
     );
   }
 }

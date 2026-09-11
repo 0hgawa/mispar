@@ -3,6 +3,7 @@ import 'package:marcos_barber/src/core/theme/status_colors.dart';
 import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/widgets/app_card.dart';
+import 'package:marcos_barber/src/shared/widgets/initials_avatar.dart';
 
 class ClientCard extends StatelessWidget {
   const new({required this.summary, required this.onTap, super.key});
@@ -25,7 +26,7 @@ class ClientCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Initials(name: client.name),
+          InitialsAvatar(name: client.name),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -47,39 +48,6 @@ class ClientCard extends StatelessWidget {
           const SizedBox(width: 10),
           _Recency(summary: summary),
         ],
-      ),
-    );
-  }
-}
-
-/// Iniciais no lugar de foto: a barbearia nao tem retrato de ninguem, e um
-/// circulo vazio seria pior que nada.
-class _Initials extends StatelessWidget {
-  const new({required this.name});
-
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final parts = name.trim().split(RegExp(r'\s+'));
-    final initials = parts.length == 1
-        ? parts.first.characters.take(1).toString().toUpperCase()
-        : '${parts.first[0]}${parts.last[0]}'.toUpperCase();
-
-    return Container(
-      width: 42,
-      height: 42,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.secondaryContainer,
-        shape: BoxShape.circle,
-      ),
-      child: Text(
-        initials,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
       ),
     );
   }

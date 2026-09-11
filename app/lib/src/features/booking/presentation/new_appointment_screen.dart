@@ -6,6 +6,7 @@ import 'package:marcos_barber/src/features/booking/presentation/new_appointment_
 import 'package:marcos_barber/src/features/booking/presentation/widgets/client_picker.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/formatters/money.dart';
+import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
 import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
@@ -127,7 +128,7 @@ class _TimeChoice extends ConsumerWidget {
     // A vaga escolhida na agenda vira o horario marcado assim que o servico
     // couber nela. Sem isto o Marcos escolheria a mesma hora duas vezes.
     ref.listen(bookableTimesProvider, (_, next) {
-      final times = next.value;
+      final times = next.value?.times;
       final preferred = draft.preferredStart;
       if (times == null || preferred == null || draft.startsAt != null) return;
       if (times.contains(preferred)) {
@@ -138,15 +139,27 @@ class _TimeChoice extends ConsumerWidget {
     return AsyncView(
       value: ref.watch(bookableTimesProvider),
       onRetry: () => ref.invalidate(bookableTimesProvider),
-      builder: (times) {
+      builder: (result) {
+        final times = result.times;
         if (times.isEmpty) {
           return Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: Dimens.screenGutter,
             ),
             child: Text(
-              'Nenhum horário livre neste dia — fechado, ou já cheio para '
-              'esse serviço. Escolha outro dia acima.',
+              switch (result.reason) {
+                NoTimeReason.closed =>
+                  'A barbearia não abre neste dia. Escolha outro acima.',
+                NoTimeReason.blocked =>
+                  'Este dia está fechado — feriado, médico ou viagem. '
+                      'Escolha outro acima.',
+                NoTimeReason.past =>
+                  'Os horários de hoje já passaram. Escolha outro dia acima.',
+                NoTimeReason.full =>
+                  'Este dia já está cheio para esse serviço. Escolha outro '
+                      'acima.',
+                null => 'Escolha um serviço para ver os horários.',
+              },
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -224,25 +237,16 @@ class _SubmitState extends ConsumerState<_Submit> {
       final name = await submit(draft);
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(
-              draft.isEditing
-                  ? '$name remarcado para ${formatHour(draft.startsAt!)}.'
-                  : '$name marcado às ${formatHour(draft.startsAt!)}.',
-            ),
-          ),
-        );
+      showSnack(
+        context,
+        draft.isEditing
+            ? '$name remarcado para ${formatHour(draft.startsAt!)}.'
+            : '$name marcado às ${formatHour(draft.startsAt!)}.',
+      );
     } on Object {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          const SnackBar(content: Text('Não consegui marcar. Tente de novo.')),
-        );
+      showSnack(context, 'Não consegui marcar. Tente de novo.');
     }
   }
 }

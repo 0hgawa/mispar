@@ -7,6 +7,8 @@ import 'package:marcos_barber/src/features/agenda/data/time_block_repository.dar
 import 'package:marcos_barber/src/features/agenda/domain/shop_hours.dart';
 import 'package:marcos_barber/src/features/agenda/domain/time_block.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
+import 'package:marcos_barber/src/shared/widgets/app_sheet.dart';
+import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -119,11 +121,7 @@ class _SlotStep extends ConsumerWidget {
       await ref.read(shopSettingsRepositoryProvider).saveSlotStep(option);
     } on Object {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          const SnackBar(content: Text('Não consegui salvar o intervalo.')),
-        );
+      showSnack(context, 'Não consegui salvar o intervalo.');
     }
   }
 }
@@ -209,27 +207,32 @@ class _ClosedDays extends ConsumerWidget {
 
   /// O motivo e opcional: e para o Marcos lembrar daqui a um mes, nao para o
   /// app cobrar explicacao.
+  ///
+  /// Folha de baixo, e nao dialogo: dialogo e para decidir, nao para digitar.
+  /// No celular o teclado sobe e come o dialogo inteiro, sobrando uma faixa no
+  /// meio da tela com um campo apertado.
   Future<String?> _askReason(BuildContext context) {
-    return showDialog<String>(
-      context: context,
-      builder: (_) => const _ReasonDialog(),
+    return showAppSheet<String>(
+      context,
+      title: 'Por quê?',
+      builder: (sheetContext) => const _ReasonField(),
     );
   }
 }
 
-/// Pergunta o motivo do fechamento.
+/// O campo do motivo, dentro da folha.
 ///
-/// Widget proprio por causa do controlador: descartado no `whenComplete` do
-/// dialogo, ele morre enquanto o campo ainda esta montado na animacao de
-/// saida, e o app cai. Quem cria, descarta — e no `dispose`.
-class _ReasonDialog extends StatefulWidget {
+/// Widget proprio por causa do controlador: quem cria, descarta — e no
+/// `dispose`. Descartado de fora, ele morre enquanto o campo ainda esta
+/// montado na animacao de saida, e o app cai.
+class _ReasonField extends StatefulWidget {
   const new();
 
   @override
-  State<_ReasonDialog> createState() => _ReasonDialogState();
+  State<_ReasonField> createState() => _ReasonFieldState();
 }
 
-class _ReasonDialogState extends State<_ReasonDialog> {
+class _ReasonFieldState extends State<_ReasonField> {
   final _controller = TextEditingController();
 
   @override
@@ -242,24 +245,42 @@ class _ReasonDialogState extends State<_ReasonDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Por quê?'),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        textCapitalization: TextCapitalization.sentences,
-        decoration: const InputDecoration(
-          hintText: 'Médico, viagem, feriado… (opcional)',
-        ),
-        onSubmitted: (_) => _done(),
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Dimens.screenGutter),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.sentences,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _done(),
+            style: theme.textTheme.bodyMedium,
+            decoration: InputDecoration(
+              hintText: 'Médico, viagem, feriado… (opcional)',
+              hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+              filled: true,
+              fillColor: colors.secondaryContainer,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(Dimens.pillRadius),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: Dimens.gapMedium),
+          FilledButton(onPressed: _done, child: const Text('Fechar o dia')),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Voltar'),
-        ),
-        TextButton(onPressed: _done, child: const Text('Fechar')),
-      ],
     );
   }
 }
@@ -500,11 +521,7 @@ class _DayRow extends ConsumerWidget {
     }
 
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        const SnackBar(content: Text('Copiado para os outros dias abertos.')),
-      );
+    showSnack(context, 'Copiado para os outros dias abertos.');
   }
 
   String _weekdayName(int weekday) => switch (weekday) {

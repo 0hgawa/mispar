@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Ler a agenda do celular para importar cliente. Os contatos nao saem
+         do aparelho: viram linha no SQLite local, e so. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS"/>
+
     <application
         android:label="Marcos Barber"
         android:name="${applicationName}"

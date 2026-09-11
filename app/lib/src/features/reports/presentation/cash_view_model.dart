@@ -4,39 +4,38 @@ import 'package:marcos_barber/src/features/agenda/data/agenda_repository.dart';
 import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
 import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
 import 'package:marcos_barber/src/features/reports/data/expense_repository.dart';
+import 'package:marcos_barber/src/features/reports/domain/cash_trend.dart';
+import 'package:marcos_barber/src/features/reports/domain/cash_window.dart';
 import 'package:marcos_barber/src/features/reports/domain/expense.dart';
+import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'cash_view_model.g.dart';
 
 enum CashPeriod {
   today('Hoje'),
-  week('Semana'),
-  month('Mês'),
-  custom('Escolher');
+  yesterday('Ontem'),
+  week('Esta semana'),
+  month('Este mês'),
+  lastMonth('Mês passado'),
+  year('Este ano'),
+  custom('Escolher datas…');
 
   new(this.label);
 
+  /// Como aparece no cabecalho e na folha de escolha.
   final String label;
 }
 
-/// Os dois lados da conta. Sao coisas diferentes — o que entra tem cliente e
-/// servico, o que sai tem categoria — entao cada um tem a sua tela.
-enum CashLane {
-  earned('Entrou'),
-  spent('Saiu');
-
-  new(this.label);
-
-  final String label;
-}
-
-/// Como o faturamento se reparte. So vale do lado do que entrou.
+/// De onde o dinheiro veio: do serviço ou da pessoa. Duas perguntas sobre a
+/// mesma soma, e por isso uma de cada vez.
+///
+/// Forma de pagamento não entra aqui. "Pagamento" ao lado de "Serviço" se lê
+/// como dinheiro **saindo**, e é o contrário: é o Pix e o cartão com que o
+/// cliente pagou. Isso tem seção própria na tela, com nome que diz isso.
 enum CashBreakdown {
   service('Serviço'),
-  client('Cliente'),
-  payment('Pagamento'),
-  entries('Atendimentos');
+  client('Cliente');
 
   new(this.label);
 
@@ -52,20 +51,78 @@ class CashFilter {
   /// Preenchido so quando o periodo e [CashPeriod.custom].
   final DateTimeRange? range;
 
+  /// O que aparece no cabecalho. Intervalo escolhido a mao mostra as datas, e
+  /// nao a palavra "Escolher" — depois de escolhido, o que importa e qual.
+  String get label {
+    final range = this.range;
+    if (period != CashPeriod.custom || range == null) return period.label;
+
+    // Mes inteiro, escolhido com um toque no grafico, tem nome. Duas datas no
+    // lugar de "Agosto de 2026" obrigariam a ler para descobrir o obvio.
+    final month = wholeMonthOf(start: range.start, end: range.end);
+    if (month != null) return formatMonthAndYear(month);
+
+    return '${formatShortDate(range.start)} – ${formatShortDate(range.end)}';
+  }
+
   /// Como chamar o periodo de tras. Nulo quando nao ha nome curto para ele —
   /// um intervalo escolhido a mao nao tem "anterior" que se explique sozinho.
-  String? get previousLabel => switch (period) {
-    CashPeriod.today => 'que ontem',
-    CashPeriod.week => 'que a semana passada',
-    CashPeriod.month => 'que ${_lastMonthName()}',
-    CashPeriod.custom => null,
-  };
-
-  String _lastMonthName() {
+  String? get previousLabel {
     final now = DateTime.now();
-    final name = DateFormat.MMMM('pt_BR')
-        .format(DateTime(now.year, now.month - 1));
-    return name;
+
+    final name = switch (period) {
+      CashPeriod.today => 'que ontem',
+      CashPeriod.yesterday => 'que anteontem',
+      CashPeriod.week => 'que a semana passada',
+      CashPeriod.month => 'que ${_monthName(now.month - 1, now.year)}',
+      CashPeriod.lastMonth => 'que ${_monthName(now.month - 2, now.year)}',
+      CashPeriod.year => 'que o ano passado',
+      CashPeriod.custom => null,
+    };
+
+    if (name == null) return null;
+
+    // Periodo que ainda esta correndo se compara com o mesmo pedaco do
+    // anterior, e o rotulo tem que dizer isso.
+    if (!now.isBefore(resolve().to)) return name;
+    return period == CashPeriod.today
+        ? '$name ate esta hora'
+        : '$name ate aqui';
+  }
+
+  /// As datas de fato consultadas, ja resolvidas. O fim e sempre exclusivo.
+  ({DateTime from, DateTime to}) resolve() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final monday = today.subtract(
+      Duration(days: today.weekday - DateTime.monday),
+    );
+
+    return switch (period) {
+      CashPeriod.today => (from: today, to: today.add(const Duration(days: 1))),
+      CashPeriod.yesterday => (
+        from: today.subtract(const Duration(days: 1)),
+        to: today,
+      ),
+      CashPeriod.week => (
+        from: monday,
+        to: monday.add(const Duration(days: 7)),
+      ),
+      CashPeriod.month => (
+        from: DateTime(now.year, now.month),
+        to: DateTime(now.year, now.month + 1),
+      ),
+      CashPeriod.lastMonth => (
+        from: DateTime(now.year, now.month - 1),
+        to: DateTime(now.year, now.month),
+      ),
+      CashPeriod.year => (from: DateTime(now.year), to: DateTime(now.year + 1)),
+      CashPeriod.custom => (
+        from: range?.start ?? today,
+        // O fim escolhido no calendario e inclusivo; a consulta e exclusiva.
+        to: (range?.end ?? today).add(const Duration(days: 1)),
+      ),
+    };
   }
 
   /// A janela imediatamente anterior, do mesmo tamanho. E com ela que o
@@ -76,11 +133,13 @@ class CashFilter {
     final monday = today.subtract(
       Duration(days: today.weekday - DateTime.monday),
     );
+    const day = Duration(days: 1);
 
-    return switch (period) {
-      CashPeriod.today => (
-        from: today.subtract(const Duration(days: 1)),
-        to: today,
+    final full = switch (period) {
+      CashPeriod.today => (from: today.subtract(day), to: today),
+      CashPeriod.yesterday => (
+        from: today.subtract(const Duration(days: 2)),
+        to: today.subtract(day),
       ),
       CashPeriod.week => (
         from: monday.subtract(const Duration(days: 7)),
@@ -90,36 +149,25 @@ class CashFilter {
         from: DateTime(now.year, now.month - 1),
         to: DateTime(now.year, now.month),
       ),
+      CashPeriod.lastMonth => (
+        from: DateTime(now.year, now.month - 2),
+        to: DateTime(now.year, now.month - 1),
+      ),
+      CashPeriod.year => (from: DateTime(now.year - 1), to: DateTime(now.year)),
       CashPeriod.custom => null,
     };
-  }
 
-  /// As datas de fato consultadas, ja resolvidas.
-  ({DateTime from, DateTime to}) resolve() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final monday = today.subtract(
-      Duration(days: today.weekday - DateTime.monday),
-    );
-
-    return switch (period) {
-      CashPeriod.today => (from: today, to: today.add(const Duration(days: 1))),
-      CashPeriod.week => (
-        from: monday,
-        to: monday.add(const Duration(days: 7)),
-      ),
-      CashPeriod.month => (
-        from: DateTime(now.year, now.month),
-        to: DateTime(now.year, now.month + 1),
-      ),
-      CashPeriod.custom => (
-        from: range?.start ?? today,
-        // O fim escolhido no calendario e inclusivo; a consulta e exclusiva.
-        to: (range?.end ?? today).add(const Duration(days: 1)),
-      ),
-    };
+    if (full == null) return null;
+    return sameProgress(previous: full, current: resolve(), now: now);
   }
 }
+
+/// "agosto", "dezembro" — aceita mes 0 ou negativo e volta para o ano de tras.
+String _monthName(int month, int year) {
+  final name = DateFormat.MMMM('pt_BR').format(DateTime(year, month));
+  return name;
+}
+
 
 /// Quanto um nome — servico ou cliente — rendeu no periodo.
 class Tally {
@@ -178,8 +226,7 @@ class CashReport {
 
   List<Tally> tallies(CashBreakdown breakdown) => switch (breakdown) {
     CashBreakdown.client => byClient,
-    CashBreakdown.payment => byPayment,
-    _ => byService,
+    CashBreakdown.service => byService,
   };
 }
 
@@ -210,25 +257,25 @@ class CashBreakdownChoice extends _$CashBreakdownChoice {
 class SpentReport {
   const new({
     required this.totalCents,
+    required this.fixedCents,
     required this.byCategory,
     required this.expenses,
   });
 
   final int totalCents;
+
+  /// O que se repete todo mes. E o piso: quanto a barbearia precisa faturar
+  /// antes de comecar a sobrar.
+  final int fixedCents;
+
+  int get looseCents => totalCents - fixedCents;
+
   final List<Tally> byCategory;
 
   /// Os lancamentos, do mais recente para o mais antigo.
   final List<Expense> expenses;
 
   bool get isEmpty => expenses.isEmpty;
-}
-
-@riverpod
-class CashLaneChoice extends _$CashLaneChoice {
-  @override
-  CashLane build() => CashLane.earned;
-
-  void select(CashLane lane) => state = lane;
 }
 
 @riverpod
@@ -240,15 +287,18 @@ Stream<SpentReport> spentReport(Ref ref) {
       .watchRange(window.from, window.to)
       .map((expenses) {
         var total = 0;
+        var fixed = 0;
         final byCategory = <String, Tally>{};
 
         for (final expense in expenses) {
           total += expense.cents;
+          if (expense.repeatsMonthly) fixed += expense.cents;
           _add(byCategory, expense.category.name, expense.cents);
         }
 
         return SpentReport(
           totalCents: total,
+          fixedCents: fixed,
           byCategory: _ranked(byCategory),
           expenses: expenses,
         );
@@ -375,3 +425,46 @@ void _add(Map<String, Tally> into, String name, int priceCents) {
 List<Tally> _ranked(Map<String, Tally> tallies) =>
     tallies.values.toList(growable: false)
       ..sort((a, b) => b.totalCents.compareTo(a.totalCents));
+
+/// Quanto entrou em cada um dos ultimos meses, do mais antigo para o mais novo.
+///
+/// Serie propria, e nao um pedaco do relatorio do periodo: o grafico mostra
+/// seis meses justamente para nao depender do recorte que esta escolhido.
+@riverpod
+Stream<List<int>> earnedByMonth(Ref ref) {
+  final starts = monthStarts(now: DateTime.now());
+  final last = starts.last;
+
+  return ref
+      .watch(agendaRepositoryProvider)
+      .watchRange(starts.first, DateTime(last.year, last.month + 1))
+      .map(
+        (all) => byMonth(
+          starts: starts,
+          moves: [
+            for (final appointment in all)
+              if (appointment.status == AppointmentStatus.done)
+                (at: appointment.startsAt, cents: appointment.priceCents),
+          ],
+        ),
+      );
+}
+
+/// Quanto saiu em cada um dos mesmos meses.
+@riverpod
+Stream<List<int>> spentByMonth(Ref ref) {
+  final starts = monthStarts(now: DateTime.now());
+  final last = starts.last;
+
+  return ref
+      .watch(expenseRepositoryProvider)
+      .watchRange(starts.first, DateTime(last.year, last.month + 1))
+      .map(
+        (all) => byMonth(
+          starts: starts,
+          moves: [
+            for (final expense in all) (at: expense.spentAt, cents: expense.cents),
+          ],
+        ),
+      );
+}

@@ -2,61 +2,46 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:marcos_barber/src/core/router/app_router.dart';
 import 'package:marcos_barber/src/core/theme/app_colors.dart';
 import 'package:marcos_barber/src/core/theme/status_colors.dart';
 import 'package:marcos_barber/src/features/reports/domain/cash_csv.dart';
 import 'package:marcos_barber/src/features/reports/presentation/cash_view_model.dart';
-import 'package:marcos_barber/src/features/reports/presentation/expense_form.dart';
-import 'package:marcos_barber/src/features/reports/presentation/widgets/cash_period_chips.dart';
-import 'package:marcos_barber/src/features/reports/presentation/widgets/earned_lane.dart';
-import 'package:marcos_barber/src/features/reports/presentation/widgets/spent_lane.dart';
+import 'package:marcos_barber/src/features/reports/presentation/widgets/cash_period_picker.dart';
+import 'package:marcos_barber/src/features/reports/presentation/widgets/profit_chart.dart';
 import 'package:marcos_barber/src/shared/formatters/money.dart';
-import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
+import 'package:marcos_barber/src/shared/widgets/app_card.dart';
+import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-/// O dinheiro, dos dois lados.
+/// O painel do dinheiro: só número e porta.
 ///
-/// Em cima, sempre visiveis: quanto entrou, quanto saiu e quanto sobrou. E a
-/// pergunta que o Marcos faz — nao "quanto faturei", mas "quanto sobrou".
-/// Tocar um dos dois numeros abre o detalhe daquele lado.
+/// A pergunta que o Marcos faz não é "quanto faturei", é **"quanto sobrou"** —
+/// por isso ela é o número grande, e não mais uma linha no meio da tela.
 ///
-/// **Entrou** e **Saiu** sao listas diferentes de proposito: o que entra tem
-/// cliente, servico e horario; o que sai tem tipo e nota. Misturar os dois num
-/// controle so faria despesa parecer um tipo de receita.
+/// Extrato não mora aqui. Entrou e Saiu são cartões que **abrem** a tela
+/// daquele lado, onde ficam o detalhamento e a lista. Painel e extrato na
+/// mesma tela era o que fazia a aba parecer relatório.
 class CashScreen extends ConsumerWidget {
   const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final lane = ref.watch(cashLaneChoiceProvider);
-
     return Scaffold(
-      // O botao so existe do lado de sair: e a unica coisa que se cadastra no
-      // Caixa. Horario se marca na Agenda.
-      floatingActionButton: lane == CashLane.spent
-          ? FloatingActionButton(
-              onPressed: () => ExpenseForm.show(context),
-              tooltip: 'Lançar despesa',
-              child: const Icon(Symbols.add_rounded, weight: 600, size: 28),
-            )
-          : null,
       body: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            const _Header(),
-            const CashPeriodChips(),
-            const SizedBox(height: Dimens.gapLarge),
-            const _Summary(),
-            const SizedBox(height: Dimens.gapLarge),
-            Expanded(
-              child: switch (lane) {
-                CashLane.earned => const EarnedLane(),
-                CashLane.spent => const SpentLane(),
-              },
-            ),
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: Dimens.gapLarge),
+          children: const [
+            _Header(),
+            SizedBox(height: Dimens.gapLarge),
+            _Left(),
+            SizedBox(height: Dimens.gapLarge),
+            _Doors(),
+            ProfitChart(),
           ],
         ),
       ),
@@ -70,18 +55,33 @@ class _Header extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: [
-        const Expanded(child: ScreenTitle(title: 'Caixa')),
-        Padding(
-          padding: const EdgeInsets.only(right: Dimens.gapSmall),
-          child: IconButton(
-            icon: const Icon(Symbols.ios_share_rounded, weight: 500),
-            tooltip: 'Exportar o período',
-            onPressed: () => _export(context, ref),
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Dimens.screenGutter,
+        12,
+        Dimens.gapSmall,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text('Caixa', style: theme.textTheme.headlineMedium),
+              ),
+              IconButton(
+                icon: const Icon(Symbols.ios_share_rounded, weight: 500),
+                tooltip: 'Exportar o período',
+                onPressed: () => _export(context, ref),
+              ),
+            ],
           ),
-        ),
-      ],
+          const CashPeriodPicker(),
+        ],
+      ),
     );
   }
 
@@ -92,15 +92,10 @@ class _Header extends ConsumerWidget {
   Future<void> _export(BuildContext context, WidgetRef ref) async {
     final report = ref.read(cashReportProvider).value;
     final spent = ref.read(spentReportProvider).value;
-    final messenger = ScaffoldMessenger.of(context);
 
     if (report == null || spent == null) return;
     if (report.entries.isEmpty && spent.expenses.isEmpty) {
-      messenger
-        ..clearSnackBars()
-        ..showSnackBar(
-          const SnackBar(content: Text('Nada para exportar neste período.')),
-        );
+      showSnack(context, 'Nada para exportar neste período.');
       return;
     }
 
@@ -123,27 +118,24 @@ class _Header extends ConsumerWidget {
         ),
       );
     } on Object {
-      messenger
-        ..clearSnackBars()
-        ..showSnackBar(
-          const SnackBar(content: Text('Não consegui gerar a planilha.')),
-        );
+      // Depois do await a tela pode ter saido: sem a guarda, o aviso
+      // procuraria um Scaffold que nao existe mais.
+      if (!context.mounted) return;
+      showSnack(context, 'Não consegui gerar a planilha.');
     }
   }
 }
 
-/// Os dois lados e o resultado, sempre na tela.
+/// O numero que resume o periodo, sozinho e grande.
 ///
-/// Os cartoes sao o proprio seletor: o numero e o caminho para o detalhe dele,
-/// entao nao precisa de um controle a parte dizendo a mesma coisa.
-class _Summary extends ConsumerWidget {
+/// Sem cartao em volta de proposito: o que se le fica no fundo, o que se toca
+/// fica em cartao. E a diferenca que diz qual dos dois e qual.
+class _Left extends ConsumerWidget {
   const new();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final lane = ref.watch(cashLaneChoiceProvider);
-    final select = ref.read(cashLaneChoiceProvider.notifier).select;
 
     final earned = ref.watch(cashReportProvider).value?.earnedCents ?? 0;
     final spent = ref.watch(spentReportProvider).value?.totalCents ?? 0;
@@ -152,53 +144,26 @@ class _Summary extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Dimens.screenGutter),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _SideCard(
-                  label: 'Entrou',
-                  cents: earned,
-                  isSelected: lane == CashLane.earned,
-                  onTap: () => select(CashLane.earned),
-                ),
-              ),
-              const SizedBox(width: Dimens.cardGap),
-              Expanded(
-                child: _SideCard(
-                  label: 'Saiu',
-                  cents: spent,
-                  isSelected: lane == CashLane.spent,
-                  onTap: () => select(CashLane.spent),
-                ),
-              ),
-            ],
-          ),
-          // Sem despesa lancada, "sobrou" repetiria o numero da esquerda.
-          if (spent > 0) ...[
-            const SizedBox(height: Dimens.gapMedium),
-            Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    // Negativo nao e "sobrou": o periodo fechou no vermelho.
-                    text: left >= 0 ? 'Sobrou ' : 'Faltou ',
-                    style: theme.textTheme.titleMedium,
-                  ),
-                  TextSpan(
-                    text: formatMoney(left.abs()),
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: left >= 0
-                          ? theme.colorScheme.onSurface
-                          : theme.status.alert,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ],
-              ),
+          Text(
+            // Negativo nao e "sobrou": o periodo fechou no vermelho.
+            left >= 0 ? 'Sobrou' : 'Faltou',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-          ],
+          ),
+          Text(
+            formatMoney(left.abs()),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.displaySmall?.copyWith(
+              color: left >= 0
+                  ? theme.colorScheme.onSurface
+                  : theme.status.alert,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
           const _AgainstLastPeriod(),
         ],
       ),
@@ -208,8 +173,10 @@ class _Summary extends ConsumerWidget {
 
 /// Como este periodo esta contra o de tras.
 ///
-/// Faturamento sozinho nao diz se o mes esta bom: R$ 4.000 e otimo depois de
-/// R$ 3.000 e ruim depois de R$ 6.000.
+/// Um numero sozinho nao diz se o mes esta bom: R$ 4.000 e otimo depois de
+/// R$ 3.000 e ruim depois de R$ 6.000. A janela de tras vem recortada no mesmo
+/// ponto — dez dias de setembro contra dez dias de agosto, nunca contra o mes
+/// inteiro.
 class _AgainstLastPeriod extends ConsumerWidget {
   const new();
 
@@ -220,14 +187,19 @@ class _AgainstLastPeriod extends ConsumerWidget {
     if (label == null) return const SizedBox.shrink();
 
     final before = ref.watch(previousPeriodProvider).value;
-    final now = ref.watch(cashReportProvider).value?.earnedCents ?? 0;
     if (before == null) return const SizedBox.shrink();
 
-    final change = percentChange(before: before.earnedCents, now: now);
+    final earned = ref.watch(cashReportProvider).value?.earnedCents ?? 0;
+    final spent = ref.watch(spentReportProvider).value?.totalCents ?? 0;
+
+    final change = percentChange(
+      before: before.earnedCents - before.spentCents,
+      now: earned - spent,
+    );
     if (change == null || change == 0) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(top: Dimens.gapSmall),
+      padding: const EdgeInsets.only(top: 6),
       child: Row(
         children: [
           Icon(
@@ -255,17 +227,68 @@ class _AgainstLastPeriod extends ConsumerWidget {
   }
 }
 
-class _SideCard extends StatelessWidget {
+/// Os dois lados da conta, cada um a uma porta de distancia.
+class _Doors extends ConsumerWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final report = ref.watch(cashReportProvider).value;
+    final spent = ref.watch(spentReportProvider).value;
+
+    final served = report?.servedCount ?? 0;
+    final booked = report?.bookedCount ?? 0;
+    final expected = report?.expectedCents ?? 0;
+    final lanced = spent?.expenses.length ?? 0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Dimens.screenGutter),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: _Door(
+                label: 'Entrou',
+                cents: report?.earnedCents ?? 0,
+                // O que esta marcado e a noticia mais util deste lado: e o que
+                // ainda pode entrar antes do periodo fechar.
+                note: expected > 0
+                    ? '+ ${formatMoney(expected)} a receber, em $booked '
+                          '${booked == 1 ? 'horário' : 'horários'}'
+                    : served == 1
+                    ? '1 atendimento'
+                    : '$served atendimentos',
+                onTap: () => context.push(Routes.earned),
+              ),
+            ),
+            const SizedBox(width: Dimens.cardGap),
+            Expanded(
+              child: _Door(
+                label: 'Saiu',
+                cents: spent?.totalCents ?? 0,
+                note: lanced == 1 ? '1 lançamento' : '$lanced lançamentos',
+                onTap: () => context.push(Routes.spent),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Door extends StatelessWidget {
   const new({
     required this.label,
     required this.cents,
-    required this.isSelected,
+    required this.note,
     required this.onTap,
   });
 
   final String label;
   final int cents;
-  final bool isSelected;
+  final String note;
   final VoidCallback onTap;
 
   @override
@@ -273,45 +296,48 @@ class _SideCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    return GestureDetector(
+    return AppCard(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 13),
-        decoration: BoxDecoration(
-          // Mesma marca de selecao da regua de dias: claro com contorno, para
-          // o numero continuar legivel dos dois lados.
-          color: isSelected
-              ? colors.surfaceContainer
-              : colors.secondaryContainer,
-          borderRadius: BorderRadius.circular(Dimens.cardRadius),
-          border: isSelected
-              ? Border.all(color: colors.onSurface, width: 2)
-              : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              Icon(
+                Symbols.chevron_right_rounded,
+                size: 18,
+                weight: 600,
                 color: colors.onSurfaceVariant,
               ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            formatMoney(cents),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontSize: 26,
+              letterSpacing: -0.5,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
-            const SizedBox(height: 2),
-            Text(
-              formatMoney(cents),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontSize: 26,
-                letterSpacing: -0.5,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            note,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colors.onSurfaceVariant,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

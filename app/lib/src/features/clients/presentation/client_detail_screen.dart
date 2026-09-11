@@ -12,7 +12,9 @@ import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/formatters/money.dart';
 import 'package:marcos_barber/src/shared/whatsapp.dart';
 import 'package:marcos_barber/src/shared/widgets/app_card.dart';
+import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
+import 'package:marcos_barber/src/shared/widgets/confirm.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -153,38 +155,21 @@ class _DangerZone extends ConsumerWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Apagar cliente?'),
-        content: Text(
+    final confirmed = await askToConfirm(
+      context,
+      title: 'Apagar cliente?',
+      message:
           '${client.name} some de vez. Como nunca teve atendimento, nada do '
           'histórico se perde.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Voltar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(dialogContext).status.alert,
-            ),
-            child: const Text('Apagar'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Apagar',
     );
 
-    if (confirmed != true) return;
+    if (!confirmed) return;
     await ref.read(clientRepositoryProvider).delete(client.id);
 
     if (!context.mounted) return;
     Navigator.of(context).pop();
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text('${client.name} apagado.')));
+    showSnack(context, '${client.name} apagado.');
   }
 }
 
@@ -280,11 +265,7 @@ class _WhatsAppButton extends StatelessWidget {
     final opened = await openWhatsApp(phone);
 
     if (opened || !context.mounted) return;
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        const SnackBar(content: Text('Não consegui abrir o WhatsApp.')),
-      );
+    showSnack(context, 'Não consegui abrir o WhatsApp.');
   }
 }
 

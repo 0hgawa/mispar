@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:marcos_barber/src/core/theme/app_colors.dart';
 import 'package:marcos_barber/src/features/clients/data/client_repository.dart';
 import 'package:marcos_barber/src/features/clients/domain/client.dart';
+import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
+import 'package:marcos_barber/src/shared/widgets/confirm.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:uuid/uuid.dart';
@@ -134,11 +136,7 @@ class _NewClientScreenState extends ConsumerState<NewClientScreen> {
       if (samePhone != null) {
         if (!mounted) return;
         setState(() => _saving = false);
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(content: Text('Esse telefone já é de ${samePhone.name}.')),
-          );
+        showSnack(context, 'Esse telefone já é de ${samePhone.name}.');
         return;
       }
 
@@ -162,48 +160,27 @@ class _NewClientScreenState extends ConsumerState<NewClientScreen> {
 
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text('$name cadastrado.')));
     } on Object {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('Não consegui cadastrar. Tente de novo.'),
-          ),
-        );
+      showSnack(context, 'Não consegui cadastrar. Tente de novo.');
     }
   }
 
   /// Pergunta antes de criar um segundo cadastro com o mesmo nome.
-  Future<bool> _confirmSameName(Client existing) async {
-    final answer = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Já existe esse nome'),
-        content: Text(
-          existing.phone.isEmpty
-              ? '${existing.name} já está cadastrado. É a mesma pessoa?'
-              : '${existing.name} já está cadastrado, no ${existing.phone}. '
-                    'É a mesma pessoa?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('É a mesma'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('É outra pessoa'),
-          ),
-        ],
-      ),
+  Future<bool> _confirmSameName(Client existing) {
+    return askToConfirm(
+      context,
+      title: 'Já existe esse nome',
+      message: existing.phone.isEmpty
+          ? '${existing.name} já está cadastrado. É a mesma pessoa?'
+          : '${existing.name} já está cadastrado, no ${existing.phone}. '
+                'É a mesma pessoa?',
+      cancelLabel: 'É a mesma',
+      confirmLabel: 'É outra pessoa',
+      // Cadastrar outra pessoa nao apaga nada: botao sem cor de alerta.
+      isDestructive: false,
     );
-
-    return answer ?? false;
   }
 }
 

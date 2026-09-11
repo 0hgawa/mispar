@@ -8,7 +8,9 @@ import 'package:marcos_barber/src/features/clients/presentation/client_detail_sc
 import 'package:marcos_barber/src/features/clients/presentation/clients_screen.dart';
 import 'package:marcos_barber/src/features/clients/presentation/new_client_screen.dart';
 import 'package:marcos_barber/src/features/reports/presentation/cash_screen.dart';
+import 'package:marcos_barber/src/features/reports/presentation/earned_screen.dart';
 import 'package:marcos_barber/src/features/reports/presentation/expense_categories_screen.dart';
+import 'package:marcos_barber/src/features/reports/presentation/spent_screen.dart';
 import 'package:marcos_barber/src/features/services/presentation/services_screen.dart';
 import 'package:marcos_barber/src/features/settings/presentation/settings_screen.dart';
 import 'package:marcos_barber/src/features/settings/presentation/shop_hours_screen.dart';
@@ -17,6 +19,8 @@ abstract final class Routes {
   static const agenda = '/agenda';
   static const clients = '/clientes';
   static const cash = '/caixa';
+  static const earned = '$cash/entrou';
+  static const spent = '$cash/saiu';
 
   static const newAppointment = '$agenda/marcar';
   static const newClient = '$clients/novo';
@@ -85,6 +89,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: Routes.cash,
                 builder: (context, state) => const CashScreen(),
+                routes: [
+                  // Filhas da aba: o cartao abre o detalhe e a barra continua
+                  // visivel, porque isto e navegacao e nao tarefa.
+                  GoRoute(
+                    path: 'entrou',
+                    builder: (context, state) => const EarnedScreen(),
+                  ),
+                  GoRoute(
+                    path: 'saiu',
+                    builder: (context, state) => const SpentScreen(),
+                  ),
+                ],
               ),
             ],
           ),

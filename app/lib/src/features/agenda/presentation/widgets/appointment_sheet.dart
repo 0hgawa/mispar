@@ -15,6 +15,8 @@ import 'package:marcos_barber/src/features/booking/presentation/new_appointment_
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/formatters/money.dart';
 import 'package:marcos_barber/src/shared/whatsapp.dart';
+import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
+import 'package:marcos_barber/src/shared/widgets/confirm.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 /// Folha do horario: o gosto do cliente em destaque e as acoes que o Marcos
@@ -28,6 +30,9 @@ class AppointmentSheet extends ConsumerStatefulWidget {
     return showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
+      // Cobre a barra de abas: o que esta aberto e modal, e por baixo dele
+      // nao ha para onde ir.
+      useRootNavigator: true,
       // Anotacao comprida faz a folha crescer; sem isto ela estoura.
       isScrollControlled: true,
       builder: (_) => AppointmentSheet(appointment),
@@ -64,9 +69,7 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
           .updateStatus(appointment.id, status, paidWith: paidWith);
       if (!context.mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text(toast)));
+      showSnack(context, toast);
     }
 
     return SafeArea(
@@ -249,11 +252,7 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
     );
 
     if (opened || !context.mounted) return;
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        const SnackBar(content: Text('Não consegui abrir o WhatsApp.')),
-      );
+    showSnack(context, 'Não consegui abrir o WhatsApp.');
   }
 
   void _reschedule(BuildContext context) {
@@ -272,31 +271,16 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
   Future<void> _confirmCancel(BuildContext context) async {
     // Desmarcar libera o horario para outra pessoa e nao da para desfazer com
     // um toque. Perguntar aqui custa dois segundos.
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Desmarcar?'),
-        content: Text(
+    final confirmed = await askToConfirm(
+      context,
+      title: 'Desmarcar?',
+      message:
           'O horário de ${appointment.client.name} às '
           '${formatHour(appointment.startsAt)} volta a ficar livre.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Voltar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(dialogContext).status.alert,
-            ),
-            child: const Text('Desmarcar'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Desmarcar',
     );
 
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     await ref
         .read(agendaRepositoryProvider)
@@ -304,14 +288,9 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
 
     if (!context.mounted) return;
     Navigator.of(context).pop();
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            '${appointment.client.name} desmarcado. O horário está livre.',
-          ),
-        ),
-      );
+    showSnack(
+      context,
+      '${appointment.client.name} desmarcado. O horário está livre.',
+    );
   }
 }
