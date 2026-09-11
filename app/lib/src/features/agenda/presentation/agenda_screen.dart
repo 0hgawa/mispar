@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:marcos_barber/src/core/router/app_router.dart';
 import 'package:marcos_barber/src/core/theme/app_colors.dart';
 import 'package:marcos_barber/src/features/agenda/presentation/day_view_model.dart';
+import 'package:marcos_barber/src/features/agenda/presentation/widgets/day_strip.dart';
 import 'package:marcos_barber/src/features/agenda/presentation/widgets/day_view.dart';
 import 'package:marcos_barber/src/features/agenda/presentation/widgets/week_view.dart';
 import 'package:marcos_barber/src/features/booking/presentation/new_appointment_view_model.dart';
@@ -57,6 +58,7 @@ class AgendaScreen extends ConsumerWidget {
         child: Column(
           children: [
             const _Header(),
+            const _Days(),
             Expanded(
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 180),
@@ -68,6 +70,33 @@ class AgendaScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A regua de dias, acima das duas visoes.
+///
+/// Fica na aba, e nao dentro do Dia, porque a Semana precisa dela do mesmo
+/// jeito: a semana que a lista mostra e a do dia escolhido, e sem a regua nao
+/// havia como trocar de semana sem voltar para o Dia. O mes abre por cima nas
+/// duas.
+///
+/// Consumer proprio: trocar de dia nao reconstroi a tela inteira.
+class _Days extends ConsumerWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return DayStrip(
+      selected: ref.watch(selectedDayProvider),
+      expanded: ref.watch(monthOpenProvider),
+      onMonthChanged: ref.read(visibleMonthProvider.notifier).show,
+      onSelect: (day) {
+        ref.read(selectedDayProvider.notifier).select(day);
+        // Escolher fecha: a pergunta que abriu a grade acabou de ser
+        // respondida, e o dia escolhido esta logo abaixo.
+        ref.read(monthOpenProvider.notifier).close();
+      },
     );
   }
 }
@@ -166,7 +195,10 @@ class _ViewToggle extends ConsumerWidget {
         (value: AgendaView.week, label: 'Semana'),
       ],
       selected: ref.watch(agendaViewProvider),
-      onSelect: ref.read(agendaViewProvider.notifier).select,
+      onSelect: (view) {
+        ref.read(agendaViewProvider.notifier).select(view);
+        ref.read(monthOpenProvider.notifier).close();
+      },
     );
   }
 }

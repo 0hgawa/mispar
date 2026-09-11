@@ -23,8 +23,8 @@ class SettingsScreen extends StatelessWidget {
             const ScreenTitle(title: 'Ajustes'),
             _Entry(
               icon: Symbols.content_cut_rounded,
-              title: 'Serviços e preços',
-              detail: 'O que a barbearia faz e quanto custa',
+              title: 'Catálogo e preços',
+              detail: 'O que a barbearia faz e o que ela vende',
               onTap: () => context.push(Routes.services),
             ),
             _Entry(
@@ -32,6 +32,12 @@ class SettingsScreen extends StatelessWidget {
               title: 'Horários e dias livres',
               detail: 'Quando a barbearia abre, e o almoço',
               onTap: () => context.push(Routes.shopHours),
+            ),
+            _Entry(
+              icon: Symbols.notifications_active_rounded,
+              title: 'Lembrete',
+              detail: 'O aviso que sai sozinho antes do horário',
+              onTap: () => context.push(Routes.reminder),
             ),
             _Entry(
               icon: Symbols.receipt_long_rounded,

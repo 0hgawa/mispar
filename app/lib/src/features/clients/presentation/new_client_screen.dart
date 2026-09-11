@@ -7,6 +7,7 @@ import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
 import 'package:marcos_barber/src/shared/widgets/confirm.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
+import 'package:marcos_barber/src/shared/widgets/task_bar.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:uuid/uuid.dart';
 
@@ -40,17 +41,10 @@ class _NewClientScreenState extends ConsumerState<NewClientScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Symbols.close_rounded, weight: 500),
-          tooltip: 'Fechar',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
+      appBar: const TaskBar(title: 'Novo cliente'),
       body: ListView(
         padding: const EdgeInsets.only(bottom: Dimens.gapLarge),
         children: [
-          const ScreenTitle(title: 'Novo cliente'),
           const SectionLabel('Quem'),
           Padding(
             padding: const EdgeInsets.symmetric(

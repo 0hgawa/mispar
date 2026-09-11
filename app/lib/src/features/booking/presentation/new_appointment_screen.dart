@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/features/agenda/presentation/widgets/day_strip.dart';
 import 'package:marcos_barber/src/features/booking/presentation/new_appointment_view_model.dart';
 import 'package:marcos_barber/src/features/booking/presentation/widgets/client_picker.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
@@ -9,8 +8,9 @@ import 'package:marcos_barber/src/shared/formatters/money.dart';
 import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
 import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
+import 'package:marcos_barber/src/shared/widgets/day_button.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
-import 'package:material_symbols_icons/symbols.dart';
+import 'package:marcos_barber/src/shared/widgets/task_bar.dart';
 
 /// Marcar horario na mao — para quem chega sem avisar.
 ///
@@ -24,23 +24,27 @@ class NewAppointmentScreen extends ConsumerWidget {
     final draft = ref.watch(bookingProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Symbols.close_rounded, weight: 500),
-          tooltip: 'Fechar',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
+      appBar: TaskBar(title: draft.isEditing ? 'Remarcar' : 'Marcar'),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 120),
         children: [
-          ScreenTitle(
-            title: draft.isEditing ? 'Remarcar' : 'Marcar',
-            // Com a hora junto, o dia por extenso nao cabe numa linha so.
-            subtitle: draft.cameFromSlot
-                ? '${formatWeekdayAndDay(draft.day)} · '
-                      '${formatHour(draft.preferredStart!)}'
-                : formatLongDay(draft.day),
+          // O dia vem antes de tudo, como na despesa e na receita: o teclado
+          // abre no campo do nome e come a metade de baixo da tela, e data que
+          // nao se ve na hora de confirmar e data que nao se confere.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Dimens.screenGutter,
+              0,
+              Dimens.screenGutter,
+              Dimens.gapSmall,
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: DayButton(
+                day: draft.day,
+                onTap: () => _pickDay(context, ref, draft.day),
+              ),
+            ),
           ),
           const SectionLabel('Quem'),
           const Padding(
@@ -49,33 +53,10 @@ class NewAppointmentScreen extends ConsumerWidget {
           ),
           const SectionLabel('O que'),
           const _ServiceChoice(),
+          // A hora so faz sentido depois do servico: e a duracao dele que
+          // decide quais comecos cabem no dia.
           if (draft.service != null) ...[
-            const SectionLabel('Quando'),
-            // Veio de uma vaga: o dia ja foi escolhido na agenda, entao a
-            // regua so aparece se ele pedir para trocar.
-            if (!draft.cameFromSlot)
-              DayStrip(
-                selected: draft.day,
-                onSelect: ref.read(bookingProvider.notifier).chooseDay,
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  Dimens.screenGutter,
-                  0,
-                  Dimens.screenGutter,
-                  Dimens.gapSmall,
-                ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: () =>
-                        ref.read(bookingProvider.notifier).chooseDay(draft.day),
-                    icon: const Icon(Symbols.edit_calendar_rounded, size: 18),
-                    label: const Text('Trocar de dia'),
-                  ),
-                ),
-              ),
+            const SectionLabel('Que horas'),
             const _TimeChoice(),
           ],
         ],
@@ -83,6 +64,29 @@ class NewAppointmentScreen extends ConsumerWidget {
       bottomNavigationBar: const _Submit(),
     );
   }
+}
+
+/// O calendario do sistema, que pula de mes e aceita a data digitada.
+Future<void> _pickDay(
+  BuildContext context,
+  WidgetRef ref,
+  DateTime current,
+) async {
+  final now = DateTime.now();
+  final chosen = await showDatePicker(
+    context: context,
+    initialDate: current,
+    // Ao contrario da despesa, aqui o passado e que nao existe: horario que ja
+    // passou nao se reserva.
+    firstDate: DateTime(now.year, now.month, now.day),
+    lastDate: DateTime(now.year + 2),
+    helpText: 'Dia do horário',
+    cancelText: 'Voltar',
+    confirmText: 'Usar',
+  );
+
+  if (chosen == null) return;
+  ref.read(bookingProvider.notifier).chooseDay(chosen);
 }
 
 class _ServiceChoice extends ConsumerWidget {
@@ -205,10 +209,15 @@ class _SubmitState extends ConsumerState<_Submit> {
 
     return BottomAction(
       // Resumo do que vai ser gravado, para conferir sem rolar de volta.
+      //
+      // Dia e hora primeiro, e sem o preco: preco nao se decide aqui, vem do
+      // servico, e o chip escolhido logo acima ja o mostra. O dia e que subiu
+      // para o topo da tela e sai de vista quando o teclado abre — e o unico
+      // aqui que, errado, poe o cliente no dia errado.
       caption: draft.isComplete
           ? Text(
-              '${draft.service!.name} às ${formatHour(draft.startsAt!)} · '
-              '${formatMoney(draft.service!.priceCents)}',
+              '${formatDayHeading(draft.day)} às '
+              '${formatHour(draft.startsAt!)} · ${draft.service!.name}',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,

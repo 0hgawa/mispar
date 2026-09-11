@@ -19,16 +19,16 @@ npm install
 node schema.test.mjs
 ```
 
-23 checagens: as migrations aplicam, a sobreposição é recusada, o almoço some
+57 checagens: as migrations aplicam, a sobreposição é recusada, o almoço some
 da disponibilidade, domingo não devolve horário, telefone errado não cancela o
-corte do vizinho.
+corte do vizinho, e o lembrete desligado não manda nada.
 
 ## Testes do robô
 
 ```bash
-cd supabase/functions/whatsapp
-deno test --allow-env dates.test.ts
-deno check index.ts
+cd supabase/functions
+deno test --allow-env _shared/dates.test.ts
+deno check whatsapp/index.ts reminders/index.ts
 deno lint
 ```
 
@@ -59,6 +59,7 @@ o relatório do mês passado muda sozinho.
 supabase link --project-ref <ref>
 supabase db push
 supabase functions deploy whatsapp --no-verify-jwt
+supabase functions deploy reminders
 ```
 
 `--no-verify-jwt` é obrigatório: quem chama é a Meta, que não tem JWT do
@@ -86,6 +87,45 @@ https://<ref>.supabase.co/functions/v1/whatsapp
 ```
 
 Verify token: o mesmo que você definiu acima. Assine o campo `messages`.
+
+## O lembrete da véspera
+
+É a única mensagem que custa: vai fora da janela de 24h, então precisa de
+template aprovado pela Meta (~R$ 0,05 por envio). Nasce **desligado** — quem
+liga é o Marcos, em Ajustes → Lembrete, onde a tela mostra antes quanto isso
+custaria na semana que vem.
+
+### O template
+
+Em `developers.facebook.com` → WhatsApp Manager → Modelos de mensagem:
+
+- Nome: `lembrete_horario`
+- Categoria: **Utilidade** — mais barata que Marketing e sem precisar de opt-in
+- Idioma: Português (BR)
+- Corpo: `Oi, {{1}}! Seu {{2}} está marcado para {{3}}. Confirma?`
+- Botões de resposta rápida, **nesta ordem**: *Confirmar*, *Desmarcar*
+
+A ordem importa: a varredura manda o id do horário no botão 0 como
+`confirm:<id>` e no botão 1 como `cancel:<id>`.
+
+### A varredura
+
+De hora em hora, pelo pg_cron:
+
+```sql
+select cron.schedule(
+  'lembretes', '0 * * * *',
+  $select net.http_post(
+      url     := 'https://<ref>.supabase.co/functions/v1/reminders',
+      headers := '{"Authorization": "Bearer <service_role_key>"}'::jsonb
+  )$
+);
+```
+
+Quem decide quem recebe é `due_reminders()` no Postgres, e não o código do
+robô: só horário que ainda vai acontecer, só cliente com cadastro, e nunca o
+mesmo horário duas vezes — `reminder_sent_at` só é gravado depois que a Meta
+aceita o envio, então falha de rede faz tentar de novo, não pagar de novo.
 
 ## A conversa
 

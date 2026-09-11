@@ -10,7 +10,6 @@ import 'package:marcos_barber/src/features/agenda/presentation/day_view_model.da
 import 'package:marcos_barber/src/features/agenda/presentation/widgets/appointment_card.dart';
 import 'package:marcos_barber/src/features/agenda/presentation/widgets/appointment_sheet.dart';
 import 'package:marcos_barber/src/features/agenda/presentation/widgets/closed_slot_tile.dart';
-import 'package:marcos_barber/src/features/agenda/presentation/widgets/day_strip.dart';
 import 'package:marcos_barber/src/features/agenda/presentation/widgets/free_slot_tile.dart';
 import 'package:marcos_barber/src/features/booking/presentation/new_appointment_view_model.dart';
 import 'package:marcos_barber/src/shared/formatters/money.dart';
@@ -27,7 +26,6 @@ class DayView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
-        const _Days(),
         Expanded(
           child: AsyncView(
             value: ref.watch(dayAgendaProvider),
@@ -85,26 +83,6 @@ class DayView extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Consumer proprio: trocar de dia nao reconstroi a tela inteira.
-class _Days extends ConsumerWidget {
-  const new();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return DayStrip(
-      selected: ref.watch(selectedDayProvider),
-      expanded: ref.watch(monthOpenProvider),
-      onMonthChanged: ref.read(visibleMonthProvider.notifier).show,
-      onSelect: (day) {
-        ref.read(selectedDayProvider.notifier).select(day);
-        // Escolher fecha: a pergunta que abriu a grade acabou de ser
-        // respondida, e o dia escolhido esta logo abaixo.
-        ref.read(monthOpenProvider.notifier).close();
-      },
     );
   }
 }

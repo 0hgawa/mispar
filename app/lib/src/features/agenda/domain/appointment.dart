@@ -10,6 +10,7 @@ part 'appointment.freezed.dart';
 abstract class Appointment with _$Appointment {
   const factory({
     required String id,
+
     /// Nulo no que foi lançado direto no Caixa, sem hora marcada.
     required Client? client,
     required Service service,

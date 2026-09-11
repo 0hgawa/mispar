@@ -45,6 +45,17 @@ export function readIncoming(payload: unknown): Incoming | null {
     return { phone, profileName, text: message.text?.body ?? "", choice: "" };
   }
 
+  // Botao de template chega por outro caminho: nao e `interactive`, e sim
+  // `button`, com o texto do botao e o que ele carrega separados.
+  if (message.type === "button") {
+    return {
+      phone,
+      profileName,
+      text: message.button?.text ?? "",
+      choice: message.button?.payload ?? "",
+    };
+  }
+
   const reply = message.interactive?.list_reply ??
     message.interactive?.button_reply;
   if (reply) {
@@ -113,7 +124,46 @@ export async function sendChoices(
   });
 }
 
-async function send(message: Record<string, unknown>): Promise<void> {
+/**
+ * Manda um template aprovado pela Meta.
+ *
+ * E o unico jeito de falar com quem nao escreveu antes — e o unico envio
+ * cobrado. Os botoes de resposta rapida ja vem no template; aqui vai so o que
+ * cada um devolve quando tocado, para o robo saber de qual horario se trata.
+ *
+ * Devolve se a Meta aceitou: so depois disso o horario pode ser marcado como
+ * avisado.
+ */
+export function sendTemplate(
+  to: string,
+  name: string,
+  variables: string[],
+  buttonPayloads: string[] = [],
+): Promise<boolean> {
+  return send({
+    to,
+    type: "template",
+    template: {
+      name,
+      language: { code: "pt_BR" },
+      components: [
+        ...(variables.length === 0 ? [] : [{
+          type: "body",
+          parameters: variables.map((text) => ({ type: "text", text })),
+        }]),
+        ...buttonPayloads.map((payload, index) => ({
+          type: "button",
+          sub_type: "quick_reply",
+          index: String(index),
+          parameters: [{ type: "payload", payload }],
+        })),
+      ],
+    },
+  });
+}
+
+/// Devolve se a Meta aceitou. Quem manda mensagem cobrada precisa saber.
+async function send(message: Record<string, unknown>): Promise<boolean> {
   const response = await fetch(`${GRAPH}/${PHONE_ID}/messages`, {
     method: "POST",
     headers: {
@@ -126,7 +176,10 @@ async function send(message: Record<string, unknown>): Promise<void> {
   if (!response.ok) {
     // Falha de envio nao pode derrubar o webhook: a Meta reenviaria tudo.
     console.error("envio falhou", response.status, await response.text());
+    return false;
   }
+
+  return true;
 }
 
 /** A Meta corta rotulo comprido sem avisar; melhor cortar com reticencia. */
@@ -143,6 +196,7 @@ interface WebhookPayload {
           from: string;
           type: string;
           text?: { body?: string };
+          button?: { payload?: string; text?: string };
           interactive?: {
             list_reply?: { id: string; title: string };
             button_reply?: { id: string; title: string };

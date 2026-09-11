@@ -6,6 +6,15 @@ import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/formatters/money.dart';
 import 'package:marcos_barber/src/shared/widgets/app_card.dart';
 
+/// Um horário marcado, na lista do dia.
+///
+/// **Duas linhas**: hora, nome e preço em cima; serviço, duração e situação
+/// embaixo. É o desenho do Booksy e do Fresha, que também resolvem o card em
+/// duas — e card mais baixo é mais dia na tela, que é para isso que a tela
+/// serve.
+///
+/// O nome continua do tamanho que era: dividir a linha com a hora não obriga a
+/// encolher o que se procura ao passar o olho.
 class AppointmentCard extends StatelessWidget {
   const new({required this.appointment, required this.onTap, super.key});
 
@@ -29,8 +38,11 @@ class AppointmentCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Linha de dados: hora, duracao e preco. Tudo na grotesca.
+            // Quando, quem e quanto. Alinhados pela base, e nao pelo centro:
+            // com dois tamanhos na mesma linha, o centro faz a hora flutuar.
             Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
               children: [
                 Text(
                   formatHour(appointment.startsAt),
@@ -39,14 +51,17 @@ class AppointmentCard extends StatelessWidget {
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  formatDuration(appointment.duration),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colors.onSurfaceVariant,
+                const SizedBox(width: 10),
+                // O nome e o heroi do card.
+                Expanded(
+                  child: Text(
+                    appointment.who,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.headlineSmall,
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 10),
                 Text(
                   formatMoney(appointment.priceCents),
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -56,15 +71,16 @@ class AppointmentCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            // O nome e o heroi do card.
-            Text(appointment.who, style: theme.textTheme.headlineSmall),
-            const SizedBox(height: 3),
+            const SizedBox(height: 4),
+            // O que vai ser feito, quanto tempo leva, e o que ha de errado.
             Row(
               children: [
                 Expanded(
                   child: Text(
-                    appointment.service.name,
+                    '${appointment.service.name} · '
+                    '${formatDuration(appointment.duration)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),

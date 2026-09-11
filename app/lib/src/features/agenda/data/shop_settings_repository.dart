@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:marcos_barber/src/core/data/database/app_database.dart';
 import 'package:marcos_barber/src/features/agenda/domain/shop_hours.dart';
+import 'package:marcos_barber/src/features/settings/domain/reminder_settings.dart';
 
 /// O que se ajusta uma vez e vale para a barbearia inteira.
 ///
@@ -39,6 +40,35 @@ class ShopSettingsRepository {
           ),
         );
   }
+
+  /// O lembrete que sai sozinho antes do horário.
+  Stream<ReminderSettings> watchReminder() {
+    final query = _db.select(_db.shopSettings)
+      ..where((s) => s.id.equals(_theRow));
+
+    return query.watchSingleOrNull().map(
+      (row) => row == null
+          ? const ReminderSettings.off()
+          : ReminderSettings(
+              isOn: row.reminderEnabled,
+              hoursBefore: row.reminderHoursBefore,
+            ),
+    );
+  }
+
+  /// Grava só as duas colunas do lembrete: o que não está no companion o
+  /// SQLite não toca, então isto nunca desfaz o passo dos horários.
+  Future<void> saveReminder(ReminderSettings reminder) {
+    return _db
+        .into(_db.shopSettings)
+        .insertOnConflictUpdate(
+          ShopSettingsCompanion.insert(
+            id: const Value(_theRow),
+            reminderEnabled: Value(reminder.isOn),
+            reminderHoursBefore: Value(reminder.hoursBefore),
+          ),
+        );
+  }
 }
 
 final shopSettingsRepositoryProvider = Provider<ShopSettingsRepository>(
@@ -49,4 +79,10 @@ final shopSettingsRepositoryProvider = Provider<ShopSettingsRepository>(
 /// marcar nao pode ficar em branco esperando um numero.
 final slotStepProvider = StreamProvider<Duration>((ref) {
   return ref.watch(shopSettingsRepositoryProvider).watchSlotStep();
+});
+
+/// Como está o lembrete. Desligado enquanto o banco não respondeu — mostrar
+/// "ligado" por um instante seria mentir sobre uma coisa que cobra.
+final reminderSettingsProvider = StreamProvider<ReminderSettings>((ref) {
+  return ref.watch(shopSettingsRepositoryProvider).watchReminder();
 });

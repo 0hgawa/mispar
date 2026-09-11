@@ -5,14 +5,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'clients_view_model.g.dart';
 
-@riverpod
-class ClientSearch extends _$ClientSearch {
-  @override
-  String build() => '';
-
-  void update(String term) => state = term;
-}
-
 /// Todos os clientes, sem filtro.
 @riverpod
 Stream<List<ClientSummary>> allClients(Ref ref) =>
@@ -44,16 +36,6 @@ bool _startsAnyWord(String name, String term) {
     if (word.startsWith(term)) return true;
   }
   return false;
-}
-
-/// A lista da tela de Clientes, ja filtrada pela busca dela.
-@riverpod
-Stream<List<ClientSummary>> clientList(Ref ref) {
-  final term = ref.watch(clientSearchProvider);
-  return ref
-      .watch(clientRepositoryProvider)
-      .watchSummaries()
-      .map((all) => matchingClients(all, term));
 }
 
 @riverpod

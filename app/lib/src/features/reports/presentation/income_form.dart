@@ -15,10 +15,11 @@ import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
 import 'package:marcos_barber/src/shared/widgets/day_button.dart';
 import 'package:marcos_barber/src/shared/widgets/initials_avatar.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
+import 'package:marcos_barber/src/shared/widgets/task_bar.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:uuid/uuid.dart';
 
-final _menuProvider = StreamProvider<List<Service>>(
+final _catalogueProvider = StreamProvider<List<Service>>(
   (ref) => ref.watch(serviceRepositoryProvider).watchAll(),
 );
 
@@ -68,20 +69,15 @@ class _IncomeFormState extends ConsumerState<IncomeForm> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final menu = ref.watch(_menuProvider).value ?? const <Service>[];
+    final catalogue = ref.watch(_catalogueProvider).value ?? const <Service>[];
+    final services = catalogue.where((item) => !item.isProduct).toList();
+    final products = catalogue.where((item) => item.isProduct).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Symbols.close_rounded, weight: 500),
-          tooltip: 'Fechar',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
+      appBar: const TaskBar(title: 'Lançar receita'),
       body: ListView(
         padding: const EdgeInsets.only(bottom: Dimens.gapLarge),
         children: [
-          const ScreenTitle(title: 'Lançar receita'),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               Dimens.screenGutter,
@@ -127,31 +123,35 @@ class _IncomeFormState extends ConsumerState<IncomeForm> {
               ),
             ),
           ),
-          const SectionLabel('Que serviço'),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Dimens.screenGutter,
+          SectionLabel(products.isEmpty ? 'Que serviço' : 'O que foi'),
+          if (catalogue.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Dimens.screenGutter,
+              ),
+              child: Text(
+                'Nada no catálogo. Ajustes → Catálogo.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
             ),
-            child: menu.isEmpty
-                ? Text(
-                    'Nenhum serviço cadastrado. Ajustes → Serviços.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  )
-                : Wrap(
-                    spacing: Dimens.gapSmall,
-                    runSpacing: Dimens.gapSmall,
-                    children: [
-                      for (final service in menu)
-                        ChoiceChip(
-                          label: Text(service.name),
-                          selected: service.id == _service?.id,
-                          onSelected: (_) => _chooseService(service),
-                        ),
-                    ],
-                  ),
-          ),
+          if (services.isNotEmpty)
+            _Choices(
+              items: services,
+              chosen: _service,
+              onChoose: _chooseService,
+            ),
+          // Produto so ganha titulo proprio quando existe: com o catalogo so
+          // de servicos, o rotulo separaria uma lista de nada.
+          if (products.isNotEmpty) ...[
+            const SectionLabel('Produtos'),
+            _Choices(
+              items: products,
+              chosen: _service,
+              onChoose: _chooseService,
+            ),
+          ],
           const SectionLabel('Como pagou'),
           Padding(
             padding: const EdgeInsets.symmetric(
@@ -259,6 +259,38 @@ class _IncomeFormState extends ConsumerState<IncomeForm> {
       setState(() => _saving = false);
       showSnack(context, 'Não consegui lançar. Tente de novo.');
     }
+  }
+}
+
+/// Uma fileira de pilulas do catalogo.
+class _Choices extends StatelessWidget {
+  const new({
+    required this.items,
+    required this.chosen,
+    required this.onChoose,
+  });
+
+  final List<Service> items;
+  final Service? chosen;
+  final ValueChanged<Service> onChoose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Dimens.screenGutter),
+      child: Wrap(
+        spacing: Dimens.gapSmall,
+        runSpacing: Dimens.gapSmall,
+        children: [
+          for (final item in items)
+            ChoiceChip(
+              label: Text(item.name),
+              selected: item.id == chosen?.id,
+              onSelected: (_) => onChoose(item),
+            ),
+        ],
+      ),
+    );
   }
 }
 

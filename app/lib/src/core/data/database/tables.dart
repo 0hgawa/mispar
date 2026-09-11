@@ -13,6 +13,10 @@ class Services extends Table {
   /// Servico aposentado sai da lista sem apagar o historico de quem ja pagou.
   BoolColumn get active => boolean().withDefault(const Constant(true))();
 
+  /// Nome do valor de CatalogueKind. Produto e vendido mas nao marcado: e o
+  /// que tira a venda de shampoo da agenda sem tirar do Caixa.
+  TextColumn get kind => text().withDefault(const Constant('service'))();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }
@@ -110,6 +114,17 @@ class ShopSettings extends Table {
   /// De quanto em quanto tempo os horarios sao oferecidos.
   IntColumn get slotStepMinutes => integer().withDefault(const Constant(15))();
 
+  /// Mandar o lembrete da véspera pelo WhatsApp.
+  ///
+  /// Desligado de fábrica: é a única mensagem do robô que custa dinheiro, e
+  /// nada que custa se liga sozinho.
+  BoolColumn get reminderEnabled =>
+      boolean().withDefault(const Constant(false))();
+
+  /// Quantas horas antes do atendimento o lembrete sai.
+  IntColumn get reminderHoursBefore =>
+      integer().withDefault(const Constant(24))();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }
@@ -134,6 +149,7 @@ class TimeBlocks extends Table {
 @DataClassName('AppointmentRow')
 class Appointments extends Table {
   TextColumn get id => text()();
+
   /// Nulo no que foi lançado direto no Caixa: quem chega sem marcar quase
   /// nunca é cadastrado, e exigir um nome ali faria o dinheiro não ser
   /// lançado — que é o problema que este campo vazio resolve.

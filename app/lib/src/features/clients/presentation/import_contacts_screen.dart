@@ -12,6 +12,7 @@ import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
 import 'package:marcos_barber/src/shared/widgets/empty_state.dart';
 import 'package:marcos_barber/src/shared/widgets/initials_avatar.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
+import 'package:marcos_barber/src/shared/widgets/task_bar.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:uuid/uuid.dart';
 
@@ -101,12 +102,8 @@ class _ImportContactsScreenState extends ConsumerState<ImportContactsScreen> {
     final contacts = _contacts;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Symbols.close_rounded, weight: 500),
-          tooltip: 'Fechar',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+      appBar: TaskBar(
+        title: 'Da agenda',
         actions: [
           if (contacts != null && contacts.isNotEmpty)
             TextButton(
@@ -180,11 +177,8 @@ class _ImportContactsScreenState extends ConsumerState<ImportContactsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ScreenTitle(
-          title: 'Da agenda',
-          subtitle: contacts.length == 1
-              ? '1 contato'
-              : '${contacts.length} contatos',
+        SectionLabel(
+          contacts.length == 1 ? '1 contato' : '${contacts.length} contatos',
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(

@@ -8,6 +8,7 @@ import 'package:marcos_barber/src/features/agenda/presentation/day_view_model.da
 import 'package:marcos_barber/src/features/clients/data/client_repository.dart';
 import 'package:marcos_barber/src/features/clients/domain/client.dart';
 import 'package:marcos_barber/src/features/services/data/service_repository.dart';
+import 'package:marcos_barber/src/features/services/domain/catalogue_kind.dart';
 import 'package:marcos_barber/src/features/services/domain/service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
@@ -60,9 +61,6 @@ class BookingDraft {
   /// Quando existe, o formulario nao pergunta o dia de novo e ja marca esse
   /// horario assim que o servico couber nele.
   final DateTime? preferredStart;
-
-  /// Veio de uma vaga da agenda, e nao do botao de marcar.
-  bool get cameFromSlot => preferredStart != null;
 
   bool get isEditing => editingId != null;
 
@@ -160,8 +158,10 @@ class Booking extends _$Booking {
 }
 
 @riverpod
-Stream<List<Service>> bookableServices(Ref ref) =>
-    ref.watch(serviceRepositoryProvider).watchAll();
+Stream<List<Service>> bookableServices(Ref ref) => ref
+    .watch(serviceRepositoryProvider)
+    // Produto nao se marca: nao tem duracao para reservar.
+    .watchAll(only: CatalogueKind.service);
 
 /// Por que nao sobrou horario para oferecer.
 ///

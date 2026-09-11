@@ -5,7 +5,7 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { handle } from "./conversation.ts";
-import { readIncoming } from "./whatsapp.ts";
+import { readIncoming } from "../_shared/whatsapp.ts";
 
 const VERIFY_TOKEN = Deno.env.get("WHATSAPP_VERIFY_TOKEN")!;
 

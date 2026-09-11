@@ -24,6 +24,8 @@ for (const file of [
   '0005_payment_method.sql',
   '0006_client_active.sql',
   '0007_slot_step.sql',
+  '0008_products_and_walk_ins.sql',
+  '0009_reminder.sql',
 ]) {
   try {
     await db.exec(readFileSync(DIR + file, 'utf8'));
@@ -250,5 +252,112 @@ check('mudar para 30 muda a grade', de30 === 30, `veio ${de30}`);
 // Volta ao padrao para nao contaminar o resto.
 await db.exec(`update shop_settings set slot_step_minutes = 15`);
 
+// ---- produto e atendimento sem cliente ----
+
+// O catalogo que veio do seed e todo de servico: produto nao existia.
+const kinds = await one(
+  `select count(*) filter (where kind = 'service')::int servicos,
+          count(*) filter (where kind = 'product')::int produtos
+     from services`,
+);
+check(
+  'o catalogo antigo continua todo servico',
+  kinds.servicos === 6 && kinds.produtos === 0,
+  `${kinds.servicos} servicos, ${kinds.produtos} produtos`,
+);
+
+await db.exec(
+  `insert into services (id, name, duration_minutes, price_cents, kind)
+     values ('pomada', 'Pomada', 5, 3500, 'product')`,
+);
+const prod = await one(`select kind from services where id = 'pomada'`);
+check('produto entra no catalogo', prod.kind === 'product');
+
+// O robo so oferece o que ocupa cadeira.
+const bookable = await one(
+  `select count(*)::int n from services where active and kind = 'service'`,
+);
+check('o robo nao ve o produto', bookable.n === 6, `veio ${bookable.n}`);
+
+// Terceiro tipo nao passa: o check protege contra erro de digitacao.
+let refused = false;
+try {
+  await db.exec(
+    `insert into services (id, name, duration_minutes, price_cents, kind)
+       values ('x', 'X', 10, 100, 'pacote')`,
+  );
+} catch {
+  refused = true;
+}
+check('tipo desconhecido e recusado', refused);
+
+// Venda lancada no balcao: sem cliente, e ainda assim gravada.
+const sale = await one(
+  `insert into appointments (service_id, starts_at, duration_minutes, price_cents, status)
+     values ('pomada', now(), 5, 3500, 'done')
+     returning client_id`,
+);
+check('atendimento sem cliente e aceito', sale.client_id === null);
+
+
+// ---- lembrete da vespera ----
+
+const cfg0 = await one(`select reminder_enabled e, reminder_hours_before h from shop_settings`);
+check('lembrete vem desligado de fabrica', cfg0.e === false && cfg0.h === 24, `${cfg0.e} / ${cfg0.h}h`);
+
+const avisado = await one(
+  `insert into clients (phone, name) values ('+5511922222222', 'Vespera') returning id`,
+);
+const perto = await one(
+  `insert into appointments (client_id, service_id, starts_at, duration_minutes, price_cents, status)
+     values ('${avisado.id}', 'corte', now() + interval '3 hours', 30, 4000, 'confirmed')
+     returning id`,
+);
+await db.exec(
+  `insert into appointments (client_id, service_id, starts_at, duration_minutes, price_cents, status)
+     values ('${avisado.id}', 'corte', now() + interval '5 days', 30, 4000, 'confirmed')`,
+);
+
+const fila = async () => (await all(`select id, phone, client_name from due_reminders()`));
+
+check('desligado nao manda nada', (await fila()).length === 0);
+
+await db.exec(`update shop_settings set reminder_enabled = true`);
+const dentro = await fila();
+check('ligado, so o horario dentro da janela', dentro.length === 1 && dentro[0].id === perto.id, `${dentro.length} na fila`);
+check('o lembrete leva telefone e nome', dentro[0]?.phone === '+5511922222222' && dentro[0]?.client_name === 'Vespera');
+
+// Janela mais curta: o mesmo horario ainda nao chegou a vez.
+await db.exec(`update shop_settings set reminder_hours_before = 2`);
+check('janela curta deixa o horario para depois', (await fila()).length === 0);
+await db.exec(`update shop_settings set reminder_hours_before = 24`);
+
+// A trava contra pagar dois.
+await db.exec(`update appointments set reminder_sent_at = now() where id = '${perto.id}'`);
+check('nao manda duas vezes', (await fila()).length === 0);
+await db.exec(`update appointments set reminder_sent_at = null where id = '${perto.id}'`);
+
+await db.exec(`update appointments set status = 'cancelled' where id = '${perto.id}'`);
+check('desmarcado nao recebe lembrete', (await fila()).length === 0);
+await db.exec(`update appointments set status = 'confirmed' where id = '${perto.id}'`);
+
+// Venda de balcao entra na janela, mas nao tem para quem mandar.
+await db.exec(
+  `insert into appointments (service_id, starts_at, duration_minutes, price_cents, status)
+     values ('pomada', now() + interval '4 hours', 5, 3500, 'confirmed')`,
+);
+check('venda sem cliente nao entra na fila', (await fila()).length === 1);
+
+let horaAbsurda = false;
+try { await db.exec(`update shop_settings set reminder_hours_before = 100`); } catch { horaAbsurda = true; }
+check('janela absurda e recusada', horaAbsurda);
+
+// O id do horario viaja no botao da mensagem, entao o telefone tem que bater.
+const alheio = await one(`select confirm_appointment('+5511900000000', '${perto.id}'::uuid) ok`);
+check('ninguem confirma o horario de outro', alheio.ok === null, String(alheio.ok));
+const dono = await one(`select confirm_appointment('+5511922222222', '${perto.id}'::uuid) ok`);
+check('o dono do numero confirma', dono.ok === true, String(dono.ok));
+const marca = await one(`select confirmed_at from appointments where id = '${perto.id}'`);
+check('a confirmacao fica gravada', marca.confirmed_at !== null);
 console.log(failed === 0 ? '\nTUDO PASSOU' : `\n${failed} FALHA(S)`);
 process.exit(failed === 0 ? 0 : 1);

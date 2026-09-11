@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:marcos_barber/src/core/data/database/app_database.dart';
+import 'package:marcos_barber/src/features/services/domain/catalogue_kind.dart';
 import 'package:marcos_barber/src/features/services/domain/service.dart';
 
 class ServiceRepository {
@@ -10,10 +11,14 @@ class ServiceRepository {
 
   /// O catalogo. Por padrao so o que esta em uso — servico aposentado nao
   /// aparece para marcar, mas continua no historico de quem ja pagou.
-  Stream<List<Service>> watchAll({bool includeRetired = false}) {
+  Stream<List<Service>> watchAll({
+    bool includeRetired = false,
+    CatalogueKind? only,
+  }) {
     final query = _db.select(_db.services)
       ..orderBy([(s) => OrderingTerm.asc(s.priceCents)]);
     if (!includeRetired) query.where((s) => s.active.equals(true));
+    if (only != null) query.where((s) => s.kind.equals(only.name));
 
     return query.watch().map(
       (rows) => rows.map(_toDomain).toList(growable: false),
@@ -47,6 +52,7 @@ class ServiceRepository {
             priceCents: service.priceCents,
             requiresDeposit: Value(service.requiresDeposit),
             active: Value(service.isActive),
+            kind: Value(service.kind.name),
           ),
         );
   }
@@ -82,6 +88,7 @@ class ServiceRepository {
     priceCents: row.priceCents,
     requiresDeposit: row.requiresDeposit,
     isActive: row.active,
+    kind: CatalogueKind.fromWire(row.kind),
   );
 }
 

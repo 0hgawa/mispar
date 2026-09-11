@@ -5,7 +5,7 @@ import 'package:marcos_barber/src/features/reports/data/expense_category_reposit
 import 'package:marcos_barber/src/features/reports/domain/expense.dart';
 import 'package:marcos_barber/src/features/reports/presentation/expense_category_form.dart';
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
-import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
+import 'package:marcos_barber/src/shared/widgets/page_bar.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 /// Os tipos de gasto da barbearia.
@@ -18,13 +18,6 @@ class ExpenseCategoriesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Symbols.arrow_back_rounded, weight: 500),
-          tooltip: 'Voltar',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => ExpenseCategoryForm.show(context),
         tooltip: 'Novo tipo',
@@ -33,15 +26,21 @@ class ExpenseCategoriesScreen extends ConsumerWidget {
       body: AsyncView(
         value: ref.watch(allExpenseCategoriesProvider),
         onRetry: () => ref.invalidate(allExpenseCategoriesProvider),
-        builder: (categories) => ListView(
-          // Espaco para o botao redondo nao tapar a ultima linha.
-          padding: const EdgeInsets.only(bottom: 92),
-          children: [
-            const ScreenTitle(
-              title: 'Despesas',
-              subtitle: 'os tipos que você lança',
+        builder: (categories) => CustomScrollView(
+          slivers: [
+            const PageBar(title: 'Despesas'),
+            const SliverToBoxAdapter(
+              child: PageSubtitle('os tipos que você lança'),
             ),
-            for (final category in categories) _Row(category: category),
+            SliverPadding(
+              // Espaco para o botao redondo nao tapar a ultima linha.
+              padding: const EdgeInsets.only(bottom: 92),
+              sliver: SliverList.list(
+                children: [
+                  for (final category in categories) _Row(category: category),
+                ],
+              ),
+            ),
           ],
         ),
       ),

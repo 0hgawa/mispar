@@ -12,6 +12,7 @@ import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
 import 'package:marcos_barber/src/shared/widgets/confirm.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
+import 'package:marcos_barber/src/shared/widgets/task_bar.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 /// Cadastrar ou corrigir um tipo de gasto.
@@ -68,19 +69,12 @@ class _ExpenseCategoryFormState extends ConsumerState<ExpenseCategoryForm> {
     final colors = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Symbols.close_rounded, weight: 500),
-          tooltip: 'Fechar',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+      appBar: TaskBar(
+        title: _isEditing ? 'Tipo de despesa' : 'Novo tipo de despesa',
       ),
       body: ListView(
         padding: const EdgeInsets.only(bottom: Dimens.gapLarge),
         children: [
-          ScreenTitle(
-            title: _isEditing ? 'Tipo de despesa' : 'Novo tipo de despesa',
-          ),
           const SectionLabel('Nome'),
           Padding(
             padding: const EdgeInsets.symmetric(

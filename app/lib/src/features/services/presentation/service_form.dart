@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:marcos_barber/src/core/theme/app_colors.dart';
 import 'package:marcos_barber/src/core/theme/status_colors.dart';
 import 'package:marcos_barber/src/features/services/data/service_repository.dart';
+import 'package:marcos_barber/src/features/services/domain/catalogue_kind.dart';
 import 'package:marcos_barber/src/features/services/domain/service.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/formatters/text.dart';
@@ -14,6 +15,8 @@ import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
 import 'package:marcos_barber/src/shared/widgets/confirm.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
+import 'package:marcos_barber/src/shared/widgets/segmented_toggle.dart';
+import 'package:marcos_barber/src/shared/widgets/task_bar.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 /// Cadastrar ou corrigir um servico.
@@ -46,6 +49,7 @@ class _ServiceFormState extends ConsumerState<ServiceForm> {
   late int _minutes = widget.service?.duration.inMinutes ?? 30;
   late bool _requiresDeposit = widget.service?.requiresDeposit ?? false;
   late bool _isActive = widget.service?.isActive ?? true;
+  late CatalogueKind _kind = widget.service?.kind ?? CatalogueKind.service;
   bool _saving = false;
 
   /// Quantos atendimentos usam este servico. Nulo enquanto nao chegou.
@@ -80,17 +84,31 @@ class _ServiceFormState extends ConsumerState<ServiceForm> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Symbols.close_rounded, weight: 500),
-          tooltip: 'Fechar',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+      appBar: TaskBar(
+        title: _isEditing ? _kind.label : 'Novo ${_kind.label.toLowerCase()}',
       ),
       body: ListView(
         padding: const EdgeInsets.only(bottom: Dimens.gapLarge),
         children: [
-          ScreenTitle(title: _isEditing ? 'Serviço' : 'Novo serviço'),
+          // So no cadastro: o tipo decide o formulario inteiro, e trocar
+          // depois de ter historico transformaria venda em atendimento.
+          if (!_isEditing)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                Dimens.screenGutter,
+                0,
+                Dimens.screenGutter,
+                Dimens.gapSmall,
+              ),
+              child: SegmentedToggle(
+                options: [
+                  for (final kind in CatalogueKind.values)
+                    (value: kind, label: kind.label),
+                ],
+                selected: _kind,
+                onSelect: (kind) => setState(() => _kind = kind),
+              ),
+            ),
           const SectionLabel('Nome e preço'),
           Padding(
             padding: const EdgeInsets.symmetric(
@@ -100,8 +118,12 @@ class _ServiceFormState extends ConsumerState<ServiceForm> {
               children: [
                 _Field(
                   controller: _name,
-                  hint: 'Corte, Barba, Degradê…',
-                  icon: Symbols.content_cut_rounded,
+                  hint: _kind == CatalogueKind.product
+                      ? 'Pomada, óleo de barba, shampoo…'
+                      : 'Corte, Barba, Degradê…',
+                  icon: _kind == CatalogueKind.product
+                      ? Symbols.shopping_bag_rounded
+                      : Symbols.content_cut_rounded,
                   autofocus: !_isEditing,
                   capitalize: true,
                   onChanged: (_) => setState(() {}),
@@ -118,40 +140,42 @@ class _ServiceFormState extends ConsumerState<ServiceForm> {
               ],
             ),
           ),
-          const SectionLabel('Quanto tempo leva'),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Dimens.screenGutter,
-            ),
-            child: Wrap(
-              spacing: Dimens.gapSmall,
-              runSpacing: Dimens.gapSmall,
-              children: [
-                for (final minutes in _durations)
-                  ChoiceChip(
-                    label: Text(formatDuration(Duration(minutes: minutes))),
-                    selected: minutes == _minutes,
-                    onSelected: (_) => setState(() => _minutes = minutes),
-                  ),
-              ],
-            ),
-          ),
-          const SectionLabel('Regras'),
-          SwitchListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: Dimens.screenGutter,
-            ),
-            value: _requiresDeposit,
-            onChanged: (value) => setState(() => _requiresDeposit = value),
-            title: const Text('Pede sinal'),
-            subtitle: Text(
-              'Serviço longo ou cliente que já faltou. Só fica confirmado '
-              'quando o dinheiro entra.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+          if (_kind == CatalogueKind.service) ...[
+            const SectionLabel('Quanto tempo leva'),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Dimens.screenGutter,
+              ),
+              child: Wrap(
+                spacing: Dimens.gapSmall,
+                runSpacing: Dimens.gapSmall,
+                children: [
+                  for (final minutes in _durations)
+                    ChoiceChip(
+                      label: Text(formatDuration(Duration(minutes: minutes))),
+                      selected: minutes == _minutes,
+                      onSelected: (_) => setState(() => _minutes = minutes),
+                    ),
+                ],
               ),
             ),
-          ),
+            const SectionLabel('Regras'),
+            SwitchListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: Dimens.screenGutter,
+              ),
+              value: _requiresDeposit,
+              onChanged: (value) => setState(() => _requiresDeposit = value),
+              title: const Text('Pede sinal'),
+              subtitle: Text(
+                'Serviço longo ou cliente que já faltou. Só fica confirmado '
+                'quando o dinheiro entra.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
           if (_isEditing)
             SwitchListTile(
               contentPadding: const EdgeInsets.symmetric(
@@ -159,10 +183,15 @@ class _ServiceFormState extends ConsumerState<ServiceForm> {
               ),
               value: _isActive,
               onChanged: (value) => setState(() => _isActive = value),
-              title: const Text('No cardápio'),
+              title: Text(
+                _kind == CatalogueKind.product ? 'À venda' : 'No cardápio',
+              ),
               subtitle: Text(
-                'Desligado, some das opções de marcar — mas o histórico de '
-                'quem já pagou continua inteiro.',
+                _kind == CatalogueKind.product
+                    ? 'Desligado, some do lançamento — mas o histórico de '
+                          'quem já comprou continua inteiro.'
+                    : 'Desligado, some das opções de marcar — mas o histórico '
+                          'de quem já pagou continua inteiro.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -213,10 +242,16 @@ class _ServiceFormState extends ConsumerState<ServiceForm> {
               // identificador que o Postgres usa. Nunca muda depois de criado.
               id: widget.service?.id ?? _idFrom(name),
               name: name,
-              duration: Duration(minutes: _minutes),
+              // Produto nasce com zero minuto: nao e um valor escolhido, e a
+              // ausencia dele.
+              duration: Duration(
+                minutes: _kind == CatalogueKind.product ? 0 : _minutes,
+              ),
               priceCents: (int.tryParse(_price.text) ?? 0) * 100,
-              requiresDeposit: _requiresDeposit,
+              requiresDeposit:
+                  _kind == CatalogueKind.service && _requiresDeposit,
               isActive: _isActive,
+              kind: _kind,
             ),
           );
 

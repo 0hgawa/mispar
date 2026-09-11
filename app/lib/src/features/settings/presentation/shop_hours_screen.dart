@@ -10,6 +10,7 @@ import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/widgets/app_sheet.dart';
 import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
+import 'package:marcos_barber/src/shared/widgets/page_bar.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:uuid/uuid.dart';
@@ -25,28 +26,27 @@ class ShopHoursScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Symbols.arrow_back_rounded, weight: 500),
-          tooltip: 'Voltar',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
       body: AsyncView(
         value: ref.watch(weekHoursProvider),
         onRetry: () => ref.invalidate(weekHoursProvider),
-        builder: (week) => ListView(
-          padding: const EdgeInsets.only(bottom: Dimens.gapLarge),
-          children: [
-            const ScreenTitle(
-              title: 'Horários',
-              subtitle: 'quando a barbearia abre',
+        builder: (week) => CustomScrollView(
+          slivers: [
+            const PageBar(title: 'Horários'),
+            const SliverToBoxAdapter(
+              child: PageSubtitle('quando a barbearia abre'),
             ),
-            for (final day in week.inOrder) _DayRow(hours: day),
-            const SizedBox(height: Dimens.gapLarge),
-            const _SlotStep(),
-            const SizedBox(height: Dimens.gapLarge),
-            const _ClosedDays(),
+            SliverPadding(
+              padding: const EdgeInsets.only(bottom: Dimens.gapLarge),
+              sliver: SliverList.list(
+                children: [
+                  for (final day in week.inOrder) _DayRow(hours: day),
+                  const SizedBox(height: Dimens.gapLarge),
+                  const _SlotStep(),
+                  const SizedBox(height: Dimens.gapLarge),
+                  const _ClosedDays(),
+                ],
+              ),
+            ),
           ],
         ),
       ),

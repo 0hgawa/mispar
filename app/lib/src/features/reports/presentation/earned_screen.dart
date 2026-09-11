@@ -11,7 +11,7 @@ import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/formatters/money.dart';
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
 import 'package:marcos_barber/src/shared/widgets/empty_state.dart';
-import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
+import 'package:marcos_barber/src/shared/widgets/page_bar.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 /// O extrato do que entrou, dia a dia.
@@ -29,13 +29,6 @@ class EarnedScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Symbols.arrow_back_rounded, weight: 500),
-          tooltip: 'Voltar',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => IncomeForm.show(context),
         tooltip: 'Lançar receita',
@@ -61,10 +54,12 @@ class _Body extends ConsumerWidget {
     final period = ref.watch(cashFilterChoiceProvider).label;
 
     if (report.entries.isEmpty) {
-      return Column(
-        children: [
-          ScreenTitle(title: 'Entrou', subtitle: period),
-          const Expanded(
+      return CustomScrollView(
+        slivers: [
+          const PageBar(title: 'Entrou'),
+          SliverToBoxAdapter(child: PageSubtitle(period)),
+          const SliverFillRemaining(
+            hasScrollBody: false,
             child: EmptyState(
               icon: Symbols.account_balance_wallet_rounded,
               title: 'Nada entrou neste período',
@@ -81,49 +76,79 @@ class _Body extends ConsumerWidget {
       cents: (entry) => entry.priceCents,
     );
 
-    return ListView(
-      // Espaco para o botao redondo nao tapar a ultima linha.
-      padding: const EdgeInsets.only(bottom: 92),
-      children: [
-        ScreenTitle(title: 'Entrou', subtitle: period),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Dimens.screenGutter),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return CustomScrollView(
+      slivers: [
+        const PageBar(title: 'Entrou'),
+        SliverToBoxAdapter(child: PageSubtitle(period)),
+        SliverPadding(
+          // Espaco para o botao redondo nao tapar a ultima linha.
+          padding: const EdgeInsets.only(bottom: 92),
+          sliver: SliverList.list(
             children: [
-              Text(
-                formatMoney(report.earnedCents),
-                style: theme.textTheme.displaySmall,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                report.servedCount == 1
-                    ? '1 atendimento'
-                    : '${report.servedCount} atendimentos',
-                style: theme.textTheme.titleMedium,
-              ),
-              // Falta nao entra na soma, e e a unica coisa desta tela que o
-              // total nao conta. Uma linha, e so quando aconteceu.
-              if (report.noShowCount > 0) ...[
-                const SizedBox(height: 2),
-                Text(
-                  '${formatMoney(report.lostCents)} perdidos em '
-                  '${report.noShowCount == 1 ? '1 falta' : '${report.noShowCount} faltas'}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.status.alert,
-                  ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Dimens.screenGutter,
                 ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      formatMoney(report.earnedCents),
+                      style: theme.textTheme.displaySmall,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(_counted(report), style: theme.textTheme.titleMedium),
+                    // Falta nao entra na soma, e e a unica coisa desta tela que o
+                    // total nao conta. Uma linha, e so quando aconteceu.
+                    if (report.noShowCount > 0) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${formatMoney(report.lostCents)} perdidos em '
+                        '${report.noShowCount == 1 ? '1 falta' : '${report.noShowCount} faltas'}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.status.alert,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              for (final day in days) ...[
+                MoneyHeading(
+                  label: formatDayHeading(day.day),
+                  cents: day.totalCents,
+                ),
+                for (final appointment in day.items)
+                  _Row(appointment: appointment),
               ],
             ],
           ),
         ),
-        for (final day in days) ...[
-          MoneyHeading(label: formatDayHeading(day.day), cents: day.totalCents),
-          for (final appointment in day.items) _Row(appointment: appointment),
-        ],
       ],
     );
   }
+}
+
+/// "3 atendimentos · 1 venda" — e so o que houve.
+///
+/// Venda de produto contada como atendimento seria dizer que alguem sentou na
+/// cadeira para comprar pomada. Separada quando nao houve nenhuma, seria um
+/// zero ocupando espaco.
+String _counted(CashReport report) {
+  final served = report.servedCount;
+  final sold = report.soldCount;
+
+  final parts = <String>[];
+  // Sem venda nenhuma, o zero de atendimentos ainda precisa aparecer: "0
+  // atendimentos" e a resposta, e a lista vazia nao chega aqui.
+  if (served > 0 || sold == 0) {
+    parts.add(served == 1 ? '1 atendimento' : '$served atendimentos');
+  }
+  if (sold > 0) {
+    parts.add(sold == 1 ? '1 venda' : '$sold vendas');
+  }
+
+  return parts.join(' · ');
 }
 
 /// Um atendimento do dia: hora, quem, o que, e quanto.

@@ -29,9 +29,14 @@ export function normalize(text: string): string {
     .trim();
 }
 
+/** O dia da loja em que aquele instante cai, como `YYYY-MM-DD`. */
+export function dayOf(instant: string | Date): string {
+  return new Date(instant).toLocaleDateString("en-CA", { timeZone: TIMEZONE });
+}
+
 /** Data de hoje na loja, como `YYYY-MM-DD`. */
 export function today(): string {
-  return new Date().toLocaleDateString("en-CA", { timeZone: TIMEZONE });
+  return dayOf(new Date());
 }
 
 export function addDays(isoDay: string, days: number): string {

@@ -21,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
   new() : super(driftDatabase(name: 'marcos_barber'));
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -54,9 +54,14 @@ class AppDatabase extends _$AppDatabase {
       // Coluna que deixa de ser obrigatoria exige refazer a tabela no SQLite;
       // o `columnTransformer` vazio copia o que ja esta la como esta.
       if (from < 11) {
-        await m.alterTable(
-          TableMigration(appointments),
-        );
+        await m.alterTable(TableMigration(appointments));
+      }
+      // v12: o catalogo passou a ter produto, e nao so servico.
+      if (from < 12) await m.addColumn(services, services.kind);
+      // v13: o lembrete da véspera, com interruptor e hora escolhida.
+      if (from < 13) {
+        await m.addColumn(shopSettings, shopSettings.reminderEnabled);
+        await m.addColumn(shopSettings, shopSettings.reminderHoursBefore);
       }
     },
     beforeOpen: (details) async {

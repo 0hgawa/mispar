@@ -21,8 +21,6 @@ class ClientSummary {
   /// O que ele mais pede. E o que o robo oferece primeiro na conversa.
   final String? usualService;
 
-  bool get isNew => visitCount == 0;
-
   int get averageTicketCents => visitCount == 0 ? 0 : spentCents ~/ visitCount;
 
   /// Sumiu: passou de 45 dias sem aparecer, tendo vindo antes.

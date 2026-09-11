@@ -297,9 +297,6 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
 
     if (!context.mounted) return;
     Navigator.of(context).pop();
-    showSnack(
-      context,
-      '${client.name} desmarcado. O horário está livre.',
-    );
+    showSnack(context, '${client.name} desmarcado. O horário está livre.');
   }
 }

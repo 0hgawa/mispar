@@ -8,6 +8,7 @@ import 'package:marcos_barber/src/features/reports/domain/cash_trend.dart';
 import 'package:marcos_barber/src/features/reports/domain/cash_window.dart';
 import 'package:marcos_barber/src/features/reports/domain/expense.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
+import 'package:marcos_barber/src/shared/week.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'cash_view_model.g.dart';
@@ -79,9 +80,7 @@ class CashFilter {
   ({DateTime from, DateTime to}) resolve() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final monday = today.subtract(
-      Duration(days: today.weekday - DateTime.monday),
-    );
+    final monday = startOfWeek(today);
 
     return switch (period) {
       CashPeriod.today => (from: today, to: today.add(const Duration(days: 1))),
@@ -115,9 +114,7 @@ class CashFilter {
   ({DateTime from, DateTime to})? resolvePrevious() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final monday = today.subtract(
-      Duration(days: today.weekday - DateTime.monday),
-    );
+    final monday = startOfWeek(today);
     const day = Duration(days: 1);
 
     final full = switch (period) {
@@ -153,13 +150,13 @@ String _monthName(int month, int year) {
   return name;
 }
 
-
 class CashReport {
   const new({
     required this.earnedCents,
     required this.expectedCents,
     required this.lostCents,
     required this.servedCount,
+    required this.soldCount,
     required this.bookedCount,
     required this.noShowCount,
     required this.entries,
@@ -174,7 +171,12 @@ class CashReport {
   final int expectedCents;
 
   final int lostCents;
+
+  /// Quantos atendimentos aconteceram. Venda de produto nao entra: ninguem
+  /// sentou na cadeira para comprar pomada.
   final int servedCount;
+
+  final int soldCount;
   final int bookedCount;
   final int noShowCount;
 
@@ -255,7 +257,7 @@ Future<({int earnedCents, int spentCents})> previousPeriod(Ref ref) async {
 
   final appointments = await ref
       .watch(agendaRepositoryProvider)
-      .watchRange(window.from, window.to)
+      .watchRange(window.from, window.to, includeSales: true)
       .first;
   final expenses = await ref
       .watch(expenseRepositoryProvider)
@@ -292,12 +294,13 @@ Stream<CashReport> cashReport(Ref ref) {
 
   return ref
       .watch(agendaRepositoryProvider)
-      .watchRange(window.from, window.to)
+      .watchRange(window.from, window.to, includeSales: true)
       .map((all) {
         var earned = 0;
         var expected = 0;
         var lost = 0;
         var served = 0;
+        var sold = 0;
         var booked = 0;
         var noShows = 0;
         final entries = <Appointment>[];
@@ -308,7 +311,11 @@ Stream<CashReport> cashReport(Ref ref) {
           switch (appointment.status) {
             case AppointmentStatus.done:
               earned += price;
-              served++;
+              if (appointment.service.isProduct) {
+                sold++;
+              } else {
+                served++;
+              }
               entries.add(appointment);
             case AppointmentStatus.noShow:
               lost += price;
@@ -329,6 +336,7 @@ Stream<CashReport> cashReport(Ref ref) {
           expectedCents: expected,
           lostCents: lost,
           servedCount: served,
+          soldCount: sold,
           bookedCount: booked,
           noShowCount: noShows,
           entries: entries.reversed.toList(growable: false),
@@ -347,7 +355,11 @@ Stream<List<int>> earnedByMonth(Ref ref) {
 
   return ref
       .watch(agendaRepositoryProvider)
-      .watchRange(starts.first, DateTime(last.year, last.month + 1))
+      .watchRange(
+        starts.first,
+        DateTime(last.year, last.month + 1),
+        includeSales: true,
+      )
       .map(
         (all) => byMonth(
           starts: starts,
@@ -373,7 +385,8 @@ Stream<List<int>> spentByMonth(Ref ref) {
         (all) => byMonth(
           starts: starts,
           moves: [
-            for (final expense in all) (at: expense.spentAt, cents: expense.cents),
+            for (final expense in all)
+              (at: expense.spentAt, cents: expense.cents),
           ],
         ),
       );

@@ -15,6 +15,7 @@ import 'package:marcos_barber/src/shared/widgets/app_card.dart';
 import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
 import 'package:marcos_barber/src/shared/widgets/confirm.dart';
+import 'package:marcos_barber/src/shared/widgets/page_bar.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -26,13 +27,6 @@ class ClientDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Symbols.arrow_back_rounded, weight: 500),
-          tooltip: 'Voltar',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
       body: AsyncView(
         value: ref.watch(clientSummaryProvider(clientId)),
         onRetry: () => ref.invalidate(clientSummaryProvider(clientId)),
@@ -56,34 +50,45 @@ class _Body extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final client = summary.client;
 
-    return ListView(
-      padding: const EdgeInsets.only(bottom: Dimens.gapLarge * 2),
-      children: [
-        ScreenTitle(
-          title: client.name,
-          subtitle: summary.isNew ? 'primeira vez' : client.phone,
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Dimens.screenGutter),
-          child: _Numbers(summary: summary),
-        ),
-        const SizedBox(height: Dimens.gapMedium),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Dimens.screenGutter),
-          child: _WhatsAppButton(phone: client.phone),
-        ),
-        const SectionLabel('Do jeito que ele gosta'),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Dimens.screenGutter),
-          child: NoteEditor(
-            note: client.note,
-            onSave: (value) =>
-                ref.read(clientRepositoryProvider).saveNote(client.id, value),
+    return CustomScrollView(
+      slivers: [
+        PageBar(title: client.name),
+        SliverToBoxAdapter(child: PageSubtitle(client.phone)),
+        SliverPadding(
+          padding: const EdgeInsets.only(bottom: Dimens.gapLarge * 2),
+          sliver: SliverList.list(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Dimens.screenGutter,
+                ),
+                child: _Numbers(summary: summary),
+              ),
+              const SizedBox(height: Dimens.gapMedium),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Dimens.screenGutter,
+                ),
+                child: _WhatsAppButton(phone: client.phone),
+              ),
+              const SectionLabel('Do jeito que ele gosta'),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Dimens.screenGutter,
+                ),
+                child: NoteEditor(
+                  note: client.note,
+                  onSave: (value) => ref
+                      .read(clientRepositoryProvider)
+                      .saveNote(client.id, value),
+                ),
+              ),
+              const SectionLabel('Histórico'),
+              _History(clientId: client.id),
+              _DangerZone(client: client),
+            ],
           ),
         ),
-        const SectionLabel('Histórico'),
-        _History(clientId: client.id),
-        _DangerZone(client: client),
       ],
     );
   }

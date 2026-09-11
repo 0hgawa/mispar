@@ -1,12 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:marcos_barber/src/core/router/app_router.dart';
 import 'package:marcos_barber/src/core/theme/app_colors.dart';
+import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
 import 'package:marcos_barber/src/features/clients/presentation/clients_view_model.dart';
 import 'package:marcos_barber/src/features/clients/presentation/import_contacts_screen.dart';
 import 'package:marcos_barber/src/features/clients/presentation/widgets/client_card.dart';
-
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
 import 'package:marcos_barber/src/shared/widgets/empty_state.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
@@ -25,62 +27,54 @@ class ClientsScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            const _Header(),
-            const _SearchField(),
-            Expanded(
-              child: AsyncView(
-                value: ref.watch(clientListProvider),
-                onRetry: () => ref.invalidate(clientListProvider),
-                builder: (clients) {
-                  if (clients.isEmpty) {
-                    return _EmptyResult(
-                      isSearching: ref.watch(clientSearchProvider).isNotEmpty,
-                    );
-                  }
-
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(
-                      Dimens.screenGutter,
-                      0,
-                      Dimens.screenGutter,
-                      // Espaco para o botao redondo nao tapar o ultimo card.
-                      88,
-                    ),
-                    itemCount: clients.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: Dimens.cardGap),
-                    itemBuilder: (context, index) {
-                      final summary = clients[index];
-                      return ClientCard(
-                        summary: summary,
-                        onTap: () => context.push(
-                          Routes.clientDetail(summary.client.id),
+        child: AsyncView(
+          value: ref.watch(allClientsProvider),
+          onRetry: () => ref.invalidate(allClientsProvider),
+          builder: (clients) => Column(
+            children: [
+              _Header(count: clients.length),
+              // A barra fica parada no topo, e o toque abre a busca por cima
+              // da lista. Rolar junto era pior dos dois lados: comia o
+              // cabeçalho enquanto ninguém buscava, e sumia justo na hora em
+              // que alguém precisava dela.
+              _SearchBar(all: clients),
+              Expanded(
+                child: clients.isEmpty
+                    ? const _NoClients()
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(
+                          Dimens.screenGutter,
+                          0,
+                          Dimens.screenGutter,
+                          // Espaco para o botao redondo nao tapar o ultimo.
+                          88,
                         ),
-                      );
-                    },
-                  );
-                },
+                        itemCount: clients.length,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: Dimens.cardGap),
+                        itemBuilder: (context, index) => ClientCard(
+                          summary: clients[index],
+                          onTap: () => context.push(
+                            Routes.clientDetail(clients[index].client.id),
+                          ),
+                        ),
+                      ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Consumer proprio: digitar na busca nao reconstroi a lista de fora.
-class _Header extends ConsumerWidget {
-  const new();
+class _Header extends StatelessWidget {
+  const new({required this.count});
+
+  final int count;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final count = ref
-        .watch(clientListProvider)
-        .maybeWhen(data: (list) => list.length, orElse: () => 0);
-
+  Widget build(BuildContext context) {
     return Row(
       children: [
         Expanded(
@@ -105,27 +99,21 @@ class _Header extends ConsumerWidget {
   }
 }
 
-class _SearchField extends ConsumerStatefulWidget {
-  const new();
+/// A barra parada, e a busca que ela abre.
+///
+/// `SearchAnchor` é o componente do Material para isto: a barra é só a porta,
+/// e o toque leva a uma tela de busca inteira — campo no topo, voltar ao lado,
+/// resultados ocupando o corpo. É o que o telefone, o WhatsApp e o Gmail
+/// fazem, e o motivo é o mesmo: enquanto se busca, a lista de trás não tem
+/// nada a dizer.
+class _SearchBar extends StatelessWidget {
+  const new({required this.all});
 
-  @override
-  ConsumerState<_SearchField> createState() => _SearchFieldState();
-}
-
-class _SearchFieldState extends ConsumerState<_SearchField> {
-  final _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  final List<ClientSummary> all;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final hasText = _controller.text.isNotEmpty;
+    final colors = Theme.of(context).colorScheme;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -134,42 +122,90 @@ class _SearchFieldState extends ConsumerState<_SearchField> {
         Dimens.screenGutter,
         Dimens.gapMedium,
       ),
-      child: TextField(
-        controller: _controller,
-        onChanged: (value) {
-          ref.read(clientSearchProvider.notifier).update(value);
-          setState(() {});
-        },
-        textInputAction: TextInputAction.search,
-        style: theme.textTheme.bodyMedium,
-        decoration: InputDecoration(
-          hintText: 'Buscar por nome ou telefone',
-          hintStyle: theme.textTheme.bodyMedium?.copyWith(
-            color: colors.onSurfaceVariant,
-          ),
-          prefixIcon: Icon(
-            Symbols.search_rounded,
-            weight: 500,
-            color: colors.onSurfaceVariant,
-          ),
-          suffixIcon: hasText
-              ? IconButton(
-                  icon: const Icon(Symbols.close_rounded, weight: 500),
-                  color: colors.onSurfaceVariant,
-                  tooltip: 'Limpar busca',
-                  onPressed: () {
-                    _controller.clear();
-                    ref.read(clientSearchProvider.notifier).update('');
-                    setState(() {});
+      child: SearchAnchor(
+        isFullScreen: true,
+        viewHintText: 'Buscar por nome ou telefone',
+        viewBackgroundColor: colors.surface,
+        // A porta continua sendo a pílula do app, e não a barra do Material:
+        // por fora nada muda; o que muda é o que acontece ao tocar.
+        builder: (context, controller) => _Pill(onTap: controller.openView),
+        suggestionsBuilder: (context, controller) {
+          final found = matchingClients(all, controller.text);
+
+          if (found.isEmpty) {
+            return const [
+              Padding(
+                padding: EdgeInsets.only(top: Dimens.gapLarge * 2),
+                child: EmptyState(
+                  icon: Symbols.search_off_rounded,
+                  title: 'Ninguém com esse nome',
+                  message: 'Confira a escrita ou tente pelo telefone.',
+                ),
+              ),
+            ];
+          }
+
+          return [
+            for (final summary in found)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Dimens.screenGutter,
+                  0,
+                  Dimens.screenGutter,
+                  Dimens.cardGap,
+                ),
+                child: ClientCard(
+                  summary: summary,
+                  onTap: () {
+                    controller.closeView(null);
+                    unawaited(
+                      context.push(Routes.clientDetail(summary.client.id)),
+                    );
                   },
-                )
-              : null,
-          filled: true,
-          fillColor: colors.secondaryContainer,
-          contentPadding: const EdgeInsets.symmetric(vertical: 14),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(Dimens.pillRadius),
-            borderSide: BorderSide.none,
+                ),
+              ),
+          ];
+        },
+      ),
+    );
+  }
+}
+
+/// A porta da busca: parece campo, mas não recebe texto — quem digita é a tela
+/// que ela abre.
+class _Pill extends StatelessWidget {
+  const new({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return Material(
+      color: colors.secondaryContainer,
+      borderRadius: BorderRadius.circular(Dimens.pillRadius),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          child: Row(
+            children: [
+              Icon(
+                Symbols.search_rounded,
+                weight: 500,
+                color: colors.onSurfaceVariant,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Buscar por nome ou telefone',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -177,21 +213,11 @@ class _SearchFieldState extends ConsumerState<_SearchField> {
   }
 }
 
-class _EmptyResult extends StatelessWidget {
-  const new({required this.isSearching});
-
-  final bool isSearching;
+class _NoClients extends StatelessWidget {
+  const new();
 
   @override
   Widget build(BuildContext context) {
-    if (isSearching) {
-      return const EmptyState(
-        icon: Symbols.search_off_rounded,
-        title: 'Ninguém com esse nome',
-        message: 'Confira a escrita ou tente pelo telefone.',
-      );
-    }
-
     return EmptyState(
       icon: Symbols.group_rounded,
       title: 'Nenhum cliente ainda',

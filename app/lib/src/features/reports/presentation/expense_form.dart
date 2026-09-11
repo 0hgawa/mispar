@@ -11,6 +11,7 @@ import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
 import 'package:marcos_barber/src/shared/widgets/day_button.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
+import 'package:marcos_barber/src/shared/widgets/task_bar.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:uuid/uuid.dart';
 
@@ -67,17 +68,10 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
         const <ExpenseCategory>[];
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Symbols.close_rounded, weight: 500),
-          tooltip: 'Fechar',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
+      appBar: TaskBar(title: _isEditing ? 'Despesa' : 'Nova despesa'),
       body: ListView(
         padding: const EdgeInsets.only(bottom: Dimens.gapLarge),
         children: [
-          ScreenTitle(title: _isEditing ? 'Despesa' : 'Nova despesa'),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               Dimens.screenGutter,

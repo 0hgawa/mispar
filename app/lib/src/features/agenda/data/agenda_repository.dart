@@ -5,6 +5,7 @@ import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
 import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
 import 'package:marcos_barber/src/features/agenda/domain/payment_method.dart';
 import 'package:marcos_barber/src/features/clients/domain/client.dart';
+import 'package:marcos_barber/src/features/services/domain/catalogue_kind.dart';
 import 'package:marcos_barber/src/features/services/domain/service.dart';
 
 /// Unica fonte de verdade dos agendamentos.
@@ -21,8 +22,14 @@ class AgendaRepository {
     return _watchRange(from, from.add(const Duration(days: 1)));
   }
 
-  Stream<List<Appointment>> watchRange(DateTime from, DateTime to) =>
-      _watchRange(from, to);
+  /// O intervalo cru. [includeSales] traz junto a venda de produto, que nao
+  /// e atendimento: ela nao ocupa horario e por isso nao aparece na agenda,
+  /// mas e dinheiro que entrou e por isso conta no Caixa.
+  Stream<List<Appointment>> watchRange(
+    DateTime from,
+    DateTime to, {
+    bool includeSales = false,
+  }) => _watchRange(from, to, includeSales: includeSales);
 
   /// Grava um atendimento que nao passou pela agenda.
   ///
@@ -116,7 +123,11 @@ class AgendaRepository {
     );
   }
 
-  Stream<List<Appointment>> _watchRange(DateTime from, DateTime to) {
+  Stream<List<Appointment>> _watchRange(
+    DateTime from,
+    DateTime to, {
+    bool includeSales = false,
+  }) {
     final query =
         _db.select(_db.appointments).join([
             // A esquerda: sem isto, o que foi lancado sem cliente sumiria da
@@ -135,7 +146,10 @@ class AgendaRepository {
                 _db.appointments.startsAt.isSmallerThanValue(to) &
                 _db.appointments.status.isNotValue(
                   AppointmentStatus.cancelled.wireName,
-                ),
+                ) &
+                (includeSales
+                    ? const Constant(true)
+                    : _db.services.kind.equals(CatalogueKind.service.name)),
           )
           ..orderBy([OrderingTerm.asc(_db.appointments.startsAt)]);
 
@@ -170,6 +184,9 @@ class AgendaRepository {
         duration: Duration(minutes: service.durationMinutes),
         priceCents: service.priceCents,
         requiresDeposit: service.requiresDeposit,
+        // Sem isto toda venda volta do banco parecendo serviço, e o Caixa
+        // conta pomada como atendimento.
+        kind: CatalogueKind.fromWire(service.kind),
       ),
     );
   }

@@ -9,7 +9,7 @@ import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/formatters/money.dart';
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
 import 'package:marcos_barber/src/shared/widgets/empty_state.dart';
-import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
+import 'package:marcos_barber/src/shared/widgets/page_bar.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 /// O extrato do que saiu.
@@ -24,13 +24,6 @@ class SpentScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Symbols.arrow_back_rounded, weight: 500),
-          tooltip: 'Voltar',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => ExpenseForm.show(context),
         tooltip: 'Lançar despesa',
@@ -56,10 +49,12 @@ class _Body extends ConsumerWidget {
     final period = ref.watch(cashFilterChoiceProvider).label;
 
     if (spent.isEmpty) {
-      return Column(
-        children: [
-          ScreenTitle(title: 'Saiu', subtitle: period),
-          const Expanded(
+      return CustomScrollView(
+        slivers: [
+          const PageBar(title: 'Saiu'),
+          SliverToBoxAdapter(child: PageSubtitle(period)),
+          const SliverFillRemaining(
+            hasScrollBody: false,
             child: EmptyState(
               icon: Symbols.receipt_long_rounded,
               title: 'Nada saiu neste período',
@@ -76,38 +71,50 @@ class _Body extends ConsumerWidget {
     final loose = spent.expenses.where((e) => !e.repeatsMonthly).toList();
     final count = spent.expenses.length;
 
-    return ListView(
-      // Espaco para o botao redondo nao tapar a ultima linha.
-      padding: const EdgeInsets.only(bottom: 92),
-      children: [
-        ScreenTitle(title: 'Saiu', subtitle: period),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Dimens.screenGutter),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return CustomScrollView(
+      slivers: [
+        const PageBar(title: 'Saiu'),
+        SliverToBoxAdapter(child: PageSubtitle(period)),
+        SliverPadding(
+          // Espaco para o botao redondo nao tapar a ultima linha.
+          padding: const EdgeInsets.only(bottom: 92),
+          sliver: SliverList.list(
             children: [
-              Text(
-                formatMoney(spent.totalCents),
-                style: theme.textTheme.displaySmall,
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Dimens.screenGutter,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      formatMoney(spent.totalCents),
+                      style: theme.textTheme.displaySmall,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      count == 1 ? '1 despesa' : '$count despesas',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                count == 1 ? '1 despesa' : '$count despesas',
-                style: theme.textTheme.titleMedium,
-              ),
+              // Com um grupo so, o cabecalho repetiria o total de cima. A lista
+              // entra direto.
+              if (fixed.isEmpty || loose.isEmpty)
+                for (final expense in spent.expenses) _Row(expense: expense)
+              else ...[
+                MoneyHeading(label: 'Todo mês', cents: spent.fixedCents),
+                for (final expense in fixed) _Row(expense: expense),
+                MoneyHeading(
+                  label: 'Só deste período',
+                  cents: spent.looseCents,
+                ),
+                for (final expense in loose) _Row(expense: expense),
+              ],
             ],
           ),
         ),
-        // Com um grupo so, o cabecalho repetiria o total de cima. A lista
-        // entra direto.
-        if (fixed.isEmpty || loose.isEmpty)
-          for (final expense in spent.expenses) _Row(expense: expense)
-        else ...[
-          MoneyHeading(label: 'Todo mês', cents: spent.fixedCents),
-          for (final expense in fixed) _Row(expense: expense),
-          MoneyHeading(label: 'Só deste período', cents: spent.looseCents),
-          for (final expense in loose) _Row(expense: expense),
-        ],
       ],
     );
   }

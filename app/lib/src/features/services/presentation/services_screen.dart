@@ -8,6 +8,7 @@ import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/formatters/money.dart';
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
 import 'package:marcos_barber/src/shared/widgets/empty_state.dart';
+import 'package:marcos_barber/src/shared/widgets/page_bar.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -24,45 +25,59 @@ class ServicesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Symbols.arrow_back_rounded, weight: 500),
-          tooltip: 'Voltar',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => ServiceForm.show(context),
-        tooltip: 'Novo serviço',
+        tooltip: 'Cadastrar',
         child: const Icon(Symbols.add_rounded, weight: 600, size: 28),
       ),
       body: AsyncView(
         value: ref.watch(_catalogueProvider),
         onRetry: () => ref.invalidate(_catalogueProvider),
-        builder: (services) {
-          final live = services.where((s) => s.isActive).toList();
-          final retired = services.where((s) => !s.isActive).toList();
+        builder: (catalogue) {
+          final live = catalogue.where((s) => s.isActive);
+          final services = live.where((s) => !s.isProduct).toList();
+          final products = live.where((s) => s.isProduct).toList();
+          final retired = catalogue.where((s) => !s.isActive).toList();
 
-          if (services.isEmpty) {
+          if (catalogue.isEmpty) {
             return const EmptyState(
               icon: Symbols.content_cut_rounded,
-              title: 'Nenhum serviço',
-              message: 'Cadastre o que a barbearia faz e por quanto.',
+              title: 'Nada no catálogo',
+              message: 'Cadastre o que a barbearia faz e o que ela vende.',
             );
           }
 
-          return ListView(
-            padding: const EdgeInsets.only(bottom: 92),
-            children: [
-              const ScreenTitle(
-                title: 'Serviços',
-                subtitle: 'o que o cliente pode escolher',
+          return CustomScrollView(
+            slivers: [
+              const PageBar(title: 'Catálogo'),
+              const SliverToBoxAdapter(
+                child: PageSubtitle('o que a barbearia faz e vende'),
               ),
-              for (final service in live) _ServiceRow(service: service),
-              if (retired.isNotEmpty) ...[
-                const SectionLabel('Fora do cardápio'),
-                for (final service in retired) _ServiceRow(service: service),
-              ],
+              SliverPadding(
+                padding: const EdgeInsets.only(bottom: 92),
+                sliver: SliverList.list(
+                  children: [
+                    // Duas listas porque sao duas coisas: uma ocupa a cadeira e a
+                    // outra sai da prateleira. So aparece o titulo quando ha as
+                    // duas — com uma so, o titulo separaria dela mesma.
+                    if (services.isNotEmpty) ...[
+                      if (products.isNotEmpty) const SectionLabel('Serviços'),
+                      for (final service in services)
+                        _ServiceRow(service: service),
+                    ],
+                    if (products.isNotEmpty) ...[
+                      const SectionLabel('Produtos'),
+                      for (final product in products)
+                        _ServiceRow(service: product),
+                    ],
+                    if (retired.isNotEmpty) ...[
+                      const SectionLabel('Fora do catálogo'),
+                      for (final service in retired)
+                        _ServiceRow(service: service),
+                    ],
+                  ],
+                ),
+              ),
             ],
           );
         },
@@ -102,14 +117,16 @@ class _ServiceRow extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            subtitle: Text(
-              service.requiresDeposit
-                  ? '${formatDuration(service.duration)} · pede sinal'
-                  : formatDuration(service.duration),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
-            ),
+            subtitle: service.isProduct
+                ? null
+                : Text(
+                    service.requiresDeposit
+                        ? '${formatDuration(service.duration)} · pede sinal'
+                        : formatDuration(service.duration),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
             trailing: Text(
               formatMoney(service.priceCents),
               style: theme.textTheme.bodyLarge?.copyWith(

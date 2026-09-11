@@ -12,8 +12,13 @@ import {
   parseDay,
   shortDay,
   today,
-} from "./dates.ts";
-import { type Choice, type Incoming, sendChoices, sendText } from "./whatsapp.ts";
+} from "../_shared/dates.ts";
+import {
+  type Choice,
+  type Incoming,
+  sendChoices,
+  sendText,
+} from "../_shared/whatsapp.ts";
 
 /** Quantos horarios oferecer por vez. Lista longa trava a decisao. */
 const TIMES_PER_PAGE = 4;
@@ -69,6 +74,10 @@ async function step(
     return await doCancel(db, message, choice.slice("cancel:".length));
   }
 
+  if (choice.startsWith("confirm:")) {
+    return await doConfirm(db, message, choice.slice("confirm:".length));
+  }
+
   if (choice.startsWith("svc:")) {
     return await offerDays(db, message, choice.slice("svc:".length));
   }
@@ -107,6 +116,9 @@ async function greet(db: SupabaseClient, message: Incoming): Promise<State> {
     .from("services")
     .select("id, name, duration_minutes, price_cents")
     .eq("active", true)
+    // Produto nao se marca: nao tem duracao para reservar. Sem isto o robo
+    // ofereceria pomada como horario.
+    .eq("kind", "service")
     .order("price_cents");
 
   if (!services?.length) {
@@ -315,6 +327,32 @@ async function doCancel(
     message.phone,
     data
       ? "Desmarcado. Quando quiser voltar, e so chamar."
+      : "Nao achei esse horario. Escreva *atendente* que o Marcos confere.",
+  );
+
+  return { step: "start" };
+}
+
+/**
+ * O cliente tocou *Confirmar* no lembrete da vespera.
+ *
+ * O id do horario viaja no botao da mensagem; quem confere se ele e mesmo
+ * daquele telefone e o Postgres.
+ */
+async function doConfirm(
+  db: SupabaseClient,
+  message: Incoming,
+  appointmentId: string,
+): Promise<State> {
+  const { data } = await db.rpc("confirm_appointment", {
+    p_phone: message.phone,
+    p_appointment_id: appointmentId,
+  });
+
+  await sendText(
+    message.phone,
+    data
+      ? "Confirmado, te espero. Se mudar alguma coisa, e so escrever."
       : "Nao achei esse horario. Escreva *atendente* que o Marcos confere.",
   );
 

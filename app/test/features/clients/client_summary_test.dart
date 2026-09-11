@@ -32,10 +32,8 @@ void main() {
   });
 
   group('resumo do cliente', () {
-    test('quem nunca veio e novo, e o ticket medio nao divide por zero', () {
-      final novo = summary(visits: 0, spent: 0);
-      expect(novo.isNew, isTrue);
-      expect(novo.averageTicketCents, 0);
+    test('quem nunca veio nao derruba o ticket medio por divisao por zero', () {
+      expect(summary(visits: 0, spent: 0).averageTicketCents, 0);
     });
 
     test('ticket medio e o gasto dividido pelas visitas', () {

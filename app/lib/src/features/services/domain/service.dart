@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:marcos_barber/src/features/services/domain/catalogue_kind.dart';
 
 part 'service.freezed.dart';
 
@@ -11,5 +12,11 @@ abstract class Service with _$Service {
     required int priceCents,
     required bool requiresDeposit,
     @Default(true) bool isActive,
+    @Default(CatalogueKind.service) CatalogueKind kind,
   }) = _Service;
+
+  const new _();
+
+  /// Produto nao ocupa cadeira: nao entra na agenda nem no que se marca.
+  bool get isProduct => kind == CatalogueKind.product;
 }

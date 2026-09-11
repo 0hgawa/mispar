@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:marcos_barber/src/core/theme/app_colors.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
+import 'package:marcos_barber/src/shared/week.dart';
 
 /// A semana do topo: sete colunas fixas, de domingo a sábado.
 ///
@@ -56,24 +57,19 @@ const double _sidePad = Dimens.screenGutter - 4;
 /// carrosseis comecam no meio de um numero grande de paginas.
 const _middle = 10000;
 
-/// O domingo da semana de [day]. `DateTime.sunday` e 7, entao o resto por 7
-/// da zero no domingo e cresce ate seis no sabado.
-DateTime _sundayOf(DateTime day) =>
-    DateTime(day.year, day.month, day.day - day.weekday % 7);
-
 /// Quantas linhas o mes ocupa — quatro, cinco ou seis, as que ele usa.
 ///
 /// Dia 0 do mes seguinte e o ultimo deste, e a sobra do comeco sao os dias que
 /// a primeira linha empresta do mes de tras.
 int _rowsIn(DateTime month) {
-  final lead = month.difference(_sundayOf(month)).inDays;
+  final lead = month.difference(startOfWeek(month)).inDays;
   final days = DateTime(month.year, month.month + 1, 0).day;
   return ((lead + days) / 7).ceil();
 }
 
 class _DayStripState extends State<DayStrip>
     with SingleTickerProviderStateMixin {
-  late final DateTime _weekBase = _sundayOf(widget.selected);
+  late final DateTime _weekBase = startOfWeek(widget.selected);
   late DateTime _monthBase = DateTime(
     widget.selected.year,
     widget.selected.month,
@@ -110,7 +106,7 @@ class _DayStripState extends State<DayStrip>
   /// Leva a semana do dia escolhido para a tela. O dia pode ter mudado por
   /// fora — pelo mes, por um atalho — e cair em outra semana.
   void _revealWeekOf(DateTime day) {
-    final sunday = _sundayOf(day);
+    final sunday = startOfWeek(day);
     _shownWeek = sunday;
 
     final page = _middle + sunday.difference(_weekBase).inDays ~/ 7;
@@ -260,7 +256,7 @@ class _DayStripState extends State<DayStrip>
                   itemBuilder: (context, page) {
                     final month = _monthAt(page);
                     // A grade sempre comeca no domingo da semana do dia 1.
-                    final first = _sundayOf(month);
+                    final first = startOfWeek(month);
 
                     // Solta a altura e alinha no topo. No meio do arrasto a
                     // caixa ainda esta no tamanho do mes de cinco linhas, e o
@@ -320,7 +316,7 @@ class _Weekdays extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     // Qualquer domingo serve: o rotulo nao depende da data.
-    final sunday = _sundayOf(DateTime.now());
+    final sunday = startOfWeek(DateTime.now());
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: _sidePad),
