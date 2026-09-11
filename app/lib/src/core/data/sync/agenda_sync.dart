@@ -78,7 +78,7 @@ class AgendaSync {
               for (final appointment in appointments.cast<RemoteAppointment>())
                 AppointmentsCompanion.insert(
                   id: appointment.id,
-                  clientId: appointment.clientId,
+                  clientId: Value(appointment.clientId),
                   serviceId: appointment.serviceId,
                   startsAt: appointment.startsAt,
                   durationMinutes: appointment.durationMinutes,

@@ -1,4 +1,3 @@
-import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/whatsapp.dart';
 
@@ -6,10 +5,15 @@ import 'package:marcos_barber/src/shared/whatsapp.dart';
 ///
 /// Falta é o que mais custa caro na cadeira, e lembrete é o que mais reduz.
 /// A mensagem vai pronta, mas quem manda é ele.
-String reminderMessage(Appointment appointment, {required DateTime now}) {
-  return 'Oi, ${firstName(appointment.client.name)}! Passando para confirmar '
-      'seu horário ${whenInWords(appointment.startsAt, now: now)} — '
-      '${appointment.service.name}. Tudo certo?';
+String reminderMessage({
+  required String name,
+  required String service,
+  required DateTime startsAt,
+  required DateTime now,
+}) {
+  return 'Oi, ${firstName(name)}! Passando para confirmar '
+      'seu horário ${whenInWords(startsAt, now: now)} — '
+      '$service. Tudo certo?';
 }
 
 /// "hoje às 14:30", "amanhã às 09:00", "sex, 11/09 às 09:00".

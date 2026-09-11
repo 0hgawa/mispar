@@ -80,6 +80,10 @@ class _Header extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final day = ref.watch(selectedDayProvider);
+    final isOpen = ref.watch(monthOpenProvider);
+    // Aberta, a grade manda no titulo: ela pode estar em novembro enquanto o
+    // dia escolhido continua em setembro.
+    final shown = ref.watch(visibleMonthProvider) ?? day;
     final now = DateTime.now();
     final isToday =
         day.year == now.year && day.month == now.month && day.day == now.day;
@@ -107,10 +111,10 @@ class _Header extends ConsumerWidget {
               const _ViewToggle(),
             ],
           ),
-          // A propria data abre o calendario. Trocar a data tocando na data e
-          // o mapeamento mais direto que existe — nao precisa de icone.
+          // A propria data abre o calendario, e o calendario e a regua de
+          // baixo crescendo. Um calendario so, em dois tamanhos.
           InkWell(
-            onTap: () => _pickDay(context, ref, day),
+            onTap: ref.read(monthOpenProvider.notifier).toggle,
             borderRadius: BorderRadius.circular(6),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 2),
@@ -121,18 +125,24 @@ class _Header extends ConsumerWidget {
                     child: Text(
                       // Mes e ano: e o que a regua de dias nao consegue dizer,
                       // e o que some quando ele pula para novembro.
-                      formatMonthAndYear(day),
+                      formatMonthAndYear(shown),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium,
                     ),
                   ),
                   const SizedBox(width: 2),
-                  Icon(
-                    Symbols.expand_more_rounded,
-                    size: 18,
-                    weight: 500,
-                    color: theme.colorScheme.onSurfaceVariant,
+                  // A seta vira, como em qualquer coisa que abre e fecha.
+                  AnimatedRotation(
+                    turns: isOpen ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    child: Icon(
+                      Symbols.expand_more_rounded,
+                      size: 18,
+                      weight: 500,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -141,28 +151,6 @@ class _Header extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  Future<void> _pickDay(
-    BuildContext context,
-    WidgetRef ref,
-    DateTime current,
-  ) async {
-    final now = DateTime.now();
-    final chosen = await showDatePicker(
-      context: context,
-      initialDate: current,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 2),
-      helpText: 'Ir para o dia',
-      cancelText: 'Voltar',
-      confirmText: 'Abrir',
-    );
-
-    if (chosen == null) return;
-    // So move o dia. A visao continua a que estava — trocar sozinho seria o
-    // app decidindo pelo Marcos.
-    ref.read(selectedDayProvider.notifier).select(chosen);
   }
 }
 

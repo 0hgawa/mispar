@@ -1,33 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
 import 'package:marcos_barber/src/features/agenda/domain/reminder.dart';
-import 'package:marcos_barber/src/features/clients/domain/client.dart';
-import 'package:marcos_barber/src/features/services/domain/service.dart';
 import 'package:marcos_barber/src/shared/whatsapp.dart';
-
-Appointment _appointment({
-  required DateTime startsAt,
-  String clientName = 'Rafael Lima',
-  String serviceName = 'Corte + Barba',
-}) {
-  return Appointment(
-    id: 'a',
-    startsAt: startsAt,
-    status: AppointmentStatus.confirmed,
-    duration: const Duration(minutes: 50),
-    priceCents: 6000,
-    client: Client(id: 'c', name: clientName, phone: '11999999999'),
-    service: Service(
-      id: 's',
-      name: serviceName,
-      duration: const Duration(minutes: 50),
-      priceCents: 6000,
-      requiresDeposit: false,
-    ),
-  );
-}
 
 void main() {
   setUpAll(() => initializeDateFormatting('pt_BR'));
@@ -68,7 +42,9 @@ void main() {
   group('reminderMessage', () {
     test('chama pelo primeiro nome e diz quando e o quê', () {
       final message = reminderMessage(
-        _appointment(startsAt: DateTime(2026, 9, 11, 10)),
+        name: 'Rafael Lima',
+        service: 'Corte + Barba',
+        startsAt: DateTime(2026, 9, 11, 10),
         now: DateTime(2026, 9, 10, 8),
       );
 
@@ -81,7 +57,9 @@ void main() {
 
     test('nome sem sobrenome nao quebra', () {
       final message = reminderMessage(
-        _appointment(startsAt: DateTime(2026, 9, 10, 10), clientName: 'Ney'),
+        name: 'Ney',
+        service: 'Corte',
+        startsAt: DateTime(2026, 9, 10, 10),
         now: DateTime(2026, 9, 10, 8),
       );
 

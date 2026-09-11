@@ -27,21 +27,6 @@ enum CashPeriod {
   final String label;
 }
 
-/// De onde o dinheiro veio: do serviço ou da pessoa. Duas perguntas sobre a
-/// mesma soma, e por isso uma de cada vez.
-///
-/// Forma de pagamento não entra aqui. "Pagamento" ao lado de "Serviço" se lê
-/// como dinheiro **saindo**, e é o contrário: é o Pix e o cartão com que o
-/// cliente pagou. Isso tem seção própria na tela, com nome que diz isso.
-enum CashBreakdown {
-  service('Serviço'),
-  client('Cliente');
-
-  new(this.label);
-
-  final String label;
-}
-
 /// O recorte de tempo que o Marcos esta olhando.
 class CashFilter {
   const new({this.period = CashPeriod.month, this.range});
@@ -169,19 +154,6 @@ String _monthName(int month, int year) {
 }
 
 
-/// Quanto um nome — servico ou cliente — rendeu no periodo.
-class Tally {
-  const new({
-    required this.name,
-    required this.count,
-    required this.totalCents,
-  });
-
-  final String name;
-  final int count;
-  final int totalCents;
-}
-
 class CashReport {
   const new({
     required this.earnedCents,
@@ -190,9 +162,6 @@ class CashReport {
     required this.servedCount,
     required this.bookedCount,
     required this.noShowCount,
-    required this.byService,
-    required this.byClient,
-    required this.byPayment,
     required this.entries,
   });
 
@@ -208,26 +177,10 @@ class CashReport {
   final int servedCount;
   final int bookedCount;
   final int noShowCount;
-  final List<Tally> byService;
-  final List<Tally> byClient;
-
-  /// Quanto entrou em dinheiro, em Pix e no cartao. E com isto que o Marcos
-  /// confere a maquininha no fim do dia.
-  final List<Tally> byPayment;
 
   /// Os atendimentos que formam o total, do mais recente para o mais antigo.
   /// Numero sem lista nao da para conferir.
   final List<Appointment> entries;
-
-  int get averageTicketCents =>
-      servedCount == 0 ? 0 : earnedCents ~/ servedCount;
-
-  bool get isEmpty => entries.isEmpty && expectedCents == 0;
-
-  List<Tally> tallies(CashBreakdown breakdown) => switch (breakdown) {
-    CashBreakdown.client => byClient,
-    CashBreakdown.service => byService,
-  };
 }
 
 @riverpod
@@ -241,14 +194,6 @@ class CashFilterChoice extends _$CashFilterChoice {
       state = CashFilter(period: CashPeriod.custom, range: range);
 }
 
-@riverpod
-class CashBreakdownChoice extends _$CashBreakdownChoice {
-  @override
-  CashBreakdown build() => CashBreakdown.service;
-
-  void select(CashBreakdown breakdown) => state = breakdown;
-}
-
 /// O que saiu no mesmo recorte de tempo.
 ///
 /// Relatorio proprio, e nao um campo do outro: sao duas tabelas e dois fluxos,
@@ -258,7 +203,6 @@ class SpentReport {
   const new({
     required this.totalCents,
     required this.fixedCents,
-    required this.byCategory,
     required this.expenses,
   });
 
@@ -269,8 +213,6 @@ class SpentReport {
   final int fixedCents;
 
   int get looseCents => totalCents - fixedCents;
-
-  final List<Tally> byCategory;
 
   /// Os lancamentos, do mais recente para o mais antigo.
   final List<Expense> expenses;
@@ -288,18 +230,15 @@ Stream<SpentReport> spentReport(Ref ref) {
       .map((expenses) {
         var total = 0;
         var fixed = 0;
-        final byCategory = <String, Tally>{};
 
         for (final expense in expenses) {
           total += expense.cents;
           if (expense.repeatsMonthly) fixed += expense.cents;
-          _add(byCategory, expense.category.name, expense.cents);
         }
 
         return SpentReport(
           totalCents: total,
           fixedCents: fixed,
-          byCategory: _ranked(byCategory),
           expenses: expenses,
         );
       });
@@ -361,9 +300,6 @@ Stream<CashReport> cashReport(Ref ref) {
         var served = 0;
         var booked = 0;
         var noShows = 0;
-        final services = <String, Tally>{};
-        final clients = <String, Tally>{};
-        final payments = <String, Tally>{};
         final entries = <Appointment>[];
 
         for (final appointment in all) {
@@ -374,15 +310,6 @@ Stream<CashReport> cashReport(Ref ref) {
               earned += price;
               served++;
               entries.add(appointment);
-              _add(services, appointment.service.name, price);
-              _add(clients, appointment.client.name, price);
-              // Concluido sem anotar tambem entra: escondido, o total do
-              // detalhamento nao bateria com o numero de cima.
-              _add(
-                payments,
-                appointment.paidWith?.label ?? 'Não anotado',
-                price,
-              );
             case AppointmentStatus.noShow:
               lost += price;
               noShows++;
@@ -404,27 +331,10 @@ Stream<CashReport> cashReport(Ref ref) {
           servedCount: served,
           bookedCount: booked,
           noShowCount: noShows,
-          byService: _ranked(services),
-          byClient: _ranked(clients),
-          byPayment: _ranked(payments),
           entries: entries.reversed.toList(growable: false),
         );
       });
 }
-
-void _add(Map<String, Tally> into, String name, int priceCents) {
-  final soFar = into[name];
-  into[name] = Tally(
-    name: name,
-    count: (soFar?.count ?? 0) + 1,
-    totalCents: (soFar?.totalCents ?? 0) + priceCents,
-  );
-}
-
-/// Maior primeiro: e de onde o dinheiro vem.
-List<Tally> _ranked(Map<String, Tally> tallies) =>
-    tallies.values.toList(growable: false)
-      ..sort((a, b) => b.totalCents.compareTo(a.totalCents));
 
 /// Quanto entrou em cada um dos ultimos meses, do mais antigo para o mais novo.
 ///

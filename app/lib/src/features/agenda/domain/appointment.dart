@@ -10,7 +10,8 @@ part 'appointment.freezed.dart';
 abstract class Appointment with _$Appointment {
   const factory({
     required String id,
-    required Client client,
+    /// Nulo no que foi lançado direto no Caixa, sem hora marcada.
+    required Client? client,
     required Service service,
     required DateTime startsAt,
     required AppointmentStatus status,
@@ -29,4 +30,11 @@ abstract class Appointment with _$Appointment {
   const new _();
 
   DateTime get endsAt => startsAt.add(duration);
+
+  /// Lançado direto no Caixa: entrou sem hora marcada e sem cliente.
+  bool get isWalkIn => client == null;
+
+  /// Como chamar quem foi atendido. Inventar um nome seria pior que admitir
+  /// que ninguém anotou.
+  String get who => client?.name ?? 'Sem cadastro';
 }

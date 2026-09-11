@@ -97,7 +97,14 @@ class _Days extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return DayStrip(
       selected: ref.watch(selectedDayProvider),
-      onSelect: ref.read(selectedDayProvider.notifier).select,
+      expanded: ref.watch(monthOpenProvider),
+      onMonthChanged: ref.read(visibleMonthProvider.notifier).show,
+      onSelect: (day) {
+        ref.read(selectedDayProvider.notifier).select(day);
+        // Escolher fecha: a pergunta que abriu a grade acabou de ser
+        // respondida, e o dia escolhido esta logo abaixo.
+        ref.read(monthOpenProvider.notifier).close();
+      },
     );
   }
 }

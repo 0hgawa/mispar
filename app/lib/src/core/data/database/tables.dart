@@ -134,7 +134,10 @@ class TimeBlocks extends Table {
 @DataClassName('AppointmentRow')
 class Appointments extends Table {
   TextColumn get id => text()();
-  TextColumn get clientId => text().references(Clients, #id)();
+  /// Nulo no que foi lançado direto no Caixa: quem chega sem marcar quase
+  /// nunca é cadastrado, e exigir um nome ali faria o dinheiro não ser
+  /// lançado — que é o problema que este campo vazio resolve.
+  TextColumn get clientId => text().nullable().references(Clients, #id)();
   TextColumn get serviceId => text().references(Services, #id)();
   DateTimeColumn get startsAt => dateTime()();
 

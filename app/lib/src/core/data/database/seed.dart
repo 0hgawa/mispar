@@ -224,7 +224,7 @@ AppointmentsCompanion _appt(
   id: id,
   durationMinutes: durationMinutes,
   priceCents: priceCents,
-  clientId: clientId,
+  clientId: Value(clientId),
   serviceId: serviceId,
   startsAt: startsAt,
   status: status.wireName,

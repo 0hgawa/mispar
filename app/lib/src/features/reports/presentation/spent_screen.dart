@@ -4,8 +4,7 @@ import 'package:marcos_barber/src/core/theme/app_colors.dart';
 import 'package:marcos_barber/src/features/reports/domain/expense.dart';
 import 'package:marcos_barber/src/features/reports/presentation/cash_view_model.dart';
 import 'package:marcos_barber/src/features/reports/presentation/expense_form.dart';
-import 'package:marcos_barber/src/features/reports/presentation/widgets/money_stats.dart';
-import 'package:marcos_barber/src/features/reports/presentation/widgets/tally_row.dart';
+import 'package:marcos_barber/src/features/reports/presentation/widgets/money_heading.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/formatters/money.dart';
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
@@ -13,15 +12,12 @@ import 'package:marcos_barber/src/shared/widgets/empty_state.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-/// O que saiu, e com o quê.
+/// O extrato do que saiu.
 ///
-/// A tela é organizada **por natureza**, não por data: são poucos lançamentos
-/// no mês, e a pergunta deles não é "que dia foi" — é *quanto disso volta no
-/// mês que vem*. O que se repete é o piso da barbearia, o quanto ela precisa
-/// faturar antes de sobrar alguma coisa.
-///
-/// É a única parte do Caixa onde se cadastra: por isso o botão redondo mora
-/// aqui, e não na aba.
+/// Mesma ideia da tela do Entrou — uma lista, não um relatório —, mas com
+/// outro corte: **o que volta todo mês, e o que não volta**. Despesa não se
+/// agrupa por dia como atendimento; são poucas, e a pergunta delas é se vão
+/// aparecer de novo. O que se repete é o piso da barbearia.
 class SpentScreen extends ConsumerWidget {
   const new({super.key});
 
@@ -78,57 +74,39 @@ class _Body extends ConsumerWidget {
 
     final fixed = spent.expenses.where((e) => e.repeatsMonthly).toList();
     final loose = spent.expenses.where((e) => !e.repeatsMonthly).toList();
+    final count = spent.expenses.length;
 
     return ListView(
-      // Espaco para o botao redondo nao tapar o ultimo lancamento.
+      // Espaco para o botao redondo nao tapar a ultima linha.
       padding: const EdgeInsets.only(bottom: 92),
       children: [
         ScreenTitle(title: 'Saiu', subtitle: period),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: Dimens.screenGutter),
-          child: Text(
-            formatMoney(spent.totalCents),
-            style: theme.textTheme.displaySmall,
-          ),
-        ),
-        const SizedBox(height: Dimens.gapLarge),
-        MoneyStats(
-          stats: [
-            (
-              value: '${spent.expenses.length}',
-              label: spent.expenses.length == 1 ? 'lançamento' : 'lançamentos',
-              isAlert: false,
-            ),
-            // Sem nenhuma despesa fixa nao ha divisao para mostrar: os dois
-            // numeros seriam o total e zero.
-            if (spent.fixedCents > 0) ...[
-              (
-                value: formatMoney(spent.fixedCents),
-                label: 'todo mês',
-                isAlert: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                formatMoney(spent.totalCents),
+                style: theme.textTheme.displaySmall,
               ),
-              (
-                value: formatMoney(spent.looseCents),
-                label: 'deste mês só',
-                isAlert: false,
+              const SizedBox(height: 2),
+              Text(
+                count == 1 ? '1 despesa' : '$count despesas',
+                style: theme.textTheme.titleMedium,
               ),
             ],
-          ],
+          ),
         ),
-        // Um tipo so nao e detalhamento: a barra iria a 100% dizendo o que o
-        // numero de cima ja disse.
-        if (spent.byCategory.length > 1) ...[
-          const SectionLabel('Com o quê'),
-          for (final tally in spent.byCategory)
-            TallyRow(tally: tally, total: spent.totalCents),
-        ],
-        if (fixed.isNotEmpty) ...[
-          const SectionLabel('Todo mês'),
-          for (final expense in fixed) _ExpenseRow(expense: expense),
-        ],
-        if (loose.isNotEmpty) ...[
-          SectionLabel(fixed.isEmpty ? 'Lançamentos' : 'Só deste período'),
-          for (final expense in loose) _ExpenseRow(expense: expense),
+        // Com um grupo so, o cabecalho repetiria o total de cima. A lista
+        // entra direto.
+        if (fixed.isEmpty || loose.isEmpty)
+          for (final expense in spent.expenses) _Row(expense: expense)
+        else ...[
+          MoneyHeading(label: 'Todo mês', cents: spent.fixedCents),
+          for (final expense in fixed) _Row(expense: expense),
+          MoneyHeading(label: 'Só deste período', cents: spent.looseCents),
+          for (final expense in loose) _Row(expense: expense),
         ],
       ],
     );
@@ -136,7 +114,7 @@ class _Body extends ConsumerWidget {
 }
 
 /// Um gasto. Tocar abre o mesmo formulario, ja preenchido.
-class _ExpenseRow extends StatelessWidget {
+class _Row extends StatelessWidget {
   const new({required this.expense});
 
   final Expense expense;
@@ -146,8 +124,8 @@ class _ExpenseRow extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    // O titulo ja diz o tipo quando nao ha nota. "Todo mes" nao entra: a
-    // secao em que a linha esta ja disse isso.
+    // O titulo ja diz o tipo quando nao ha nota; repetir seria uma linha
+    // dizendo o que a de cima disse.
     final hasNote = expense.title != expense.category.name;
 
     return Column(
@@ -184,6 +162,8 @@ class _ExpenseRow extends StatelessWidget {
           subtitle: hasNote
               ? Text(
                   expense.category.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colors.onSurfaceVariant,
                   ),

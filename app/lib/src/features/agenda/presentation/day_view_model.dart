@@ -24,9 +24,6 @@ class DayAgenda {
   final int forecastCents;
 }
 
-/// Quantos dias a regua do topo mostra de uma vez.
-const kDayStripLength = 14;
-
 DateTime _midnight(DateTime moment) =>
     DateTime(moment.year, moment.month, moment.day);
 
@@ -45,6 +42,31 @@ class SelectedDay extends _$SelectedDay {
   DateTime build() => _midnight(DateTime.now());
 
   void select(DateTime day) => state = _midnight(day);
+}
+
+/// A régua está aberta no mês, ou fechada na semana.
+///
+/// Mora aqui porque quem abre é o título, no cabeçalho, e quem desenha é a
+/// régua, dentro da lista do dia — dois widgets que não se enxergam.
+@riverpod
+class MonthOpen extends _$MonthOpen {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+
+  void close() => state = false;
+}
+
+/// O mês que a régua aberta está mostrando, quando não é o do dia escolhido.
+///
+/// Sem isto o título diria "Setembro" enquanto a grade mostra novembro.
+@riverpod
+class VisibleMonth extends _$VisibleMonth {
+  @override
+  DateTime? build() => null;
+
+  void show(DateTime? month) => state = month;
 }
 
 @riverpod

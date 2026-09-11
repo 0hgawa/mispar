@@ -21,7 +21,7 @@ String cashCsv({
           on: appointment.startsAt,
           kind: 'Entrada',
           what: appointment.service.name,
-          who: appointment.client.name,
+          who: appointment.who,
           detail: appointment.paidWith?.label ?? '',
           cents: appointment.priceCents,
         ),

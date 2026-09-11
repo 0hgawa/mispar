@@ -58,7 +58,7 @@ class AppointmentCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             // O nome e o heroi do card.
-            Text(appointment.client.name, style: theme.textTheme.headlineSmall),
+            Text(appointment.who, style: theme.textTheme.headlineSmall),
             const SizedBox(height: 3),
             Row(
               children: [

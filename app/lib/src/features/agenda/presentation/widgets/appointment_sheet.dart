@@ -12,6 +12,7 @@ import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart
 import 'package:marcos_barber/src/features/agenda/domain/payment_method.dart';
 import 'package:marcos_barber/src/features/agenda/domain/reminder.dart';
 import 'package:marcos_barber/src/features/booking/presentation/new_appointment_view_model.dart';
+import 'package:marcos_barber/src/features/clients/domain/client.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/formatters/money.dart';
 import 'package:marcos_barber/src/shared/whatsapp.dart';
@@ -54,7 +55,10 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final note = appointment.client.note;
+    // Lancado direto no Caixa nao tem cliente: nao ha anotacao, nao ha
+    // telefone, e nao ha o que lembrar ou remarcar.
+    final client = appointment.client;
+    final note = client?.note;
     final isClosed =
         appointment.status == AppointmentStatus.done ||
         appointment.status == AppointmentStatus.noShow;
@@ -93,15 +97,14 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(
-                appointment.client.name,
-                style: theme.textTheme.headlineMedium,
-              ),
+              Text(appointment.who, style: theme.textTheme.headlineMedium),
               const SizedBox(height: 3),
               Text(
-                '${appointment.service.name} · '
-                '${formatMoney(appointment.priceCents)} · '
-                '${appointment.client.phone}',
+                [
+                  appointment.service.name,
+                  formatMoney(appointment.priceCents),
+                  if (client != null) client.phone,
+                ].join(' · '),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
@@ -136,7 +139,8 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
               if (isClosed) ...[
                 if (appointment.paidWith != null) ...[
                   Text(
-                    'Recebido em ${appointment.paidWith!.label.toLowerCase()}.',
+                    // 'Pix' e nome proprio: minusculo ali ficava errado.
+                    'Recebido em ${appointment.paidWith!.label}.',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
@@ -192,7 +196,7 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
                   ),
                   child: const Text('Anotar depois'),
                 ),
-              ] else ...[
+              ] else if (client != null) ...[
                 FilledButton(
                   onPressed: () => setState(() => _asking = true),
                   child: const Text('Concluir atendimento'),
@@ -202,7 +206,7 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
                 // que mais reduz. Vai com o texto pronto: o Marcos so revisa
                 // e manda.
                 OutlinedButton.icon(
-                  onPressed: () => _remind(context),
+                  onPressed: () => _remind(context, client),
                   icon: const Icon(Symbols.chat_rounded, size: 20, weight: 500),
                   label: const Text('Lembrar no WhatsApp'),
                 ),
@@ -211,7 +215,7 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => _reschedule(context),
+                        onPressed: () => _reschedule(context, client),
                         child: const Text('Remarcar'),
                       ),
                     ),
@@ -220,7 +224,7 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
                       child: OutlinedButton(
                         onPressed: () => mark(
                           AppointmentStatus.noShow,
-                          '${appointment.client.name} marcado como falta.',
+                          '${client.name} marcado como falta.',
                         ),
                         child: const Text('Não apareceu'),
                       ),
@@ -229,7 +233,7 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
                 ),
                 const SizedBox(height: 4),
                 TextButton(
-                  onPressed: () => _confirmCancel(context),
+                  onPressed: () => _confirmCancel(context, client),
                   style: TextButton.styleFrom(
                     minimumSize: const Size.fromHeight(Dimens.buttonHeight),
                     foregroundColor: theme.status.alert,
@@ -245,22 +249,27 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
   }
 
   /// Abre a conversa com o texto do lembrete pronto.
-  Future<void> _remind(BuildContext context) async {
+  Future<void> _remind(BuildContext context, Client client) async {
     final opened = await openWhatsApp(
-      appointment.client.phone,
-      message: reminderMessage(appointment, now: DateTime.now()),
+      client.phone,
+      message: reminderMessage(
+        name: client.name,
+        service: appointment.service.name,
+        startsAt: appointment.startsAt,
+        now: DateTime.now(),
+      ),
     );
 
     if (opened || !context.mounted) return;
     showSnack(context, 'Não consegui abrir o WhatsApp.');
   }
 
-  void _reschedule(BuildContext context) {
+  void _reschedule(BuildContext context, Client client) {
     ref
         .read(bookingProvider.notifier)
         .startEditing(
           appointmentId: appointment.id,
-          client: appointment.client,
+          client: client,
           service: appointment.service,
           startsAt: appointment.startsAt,
         );
@@ -268,14 +277,14 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
     unawaited(context.push(Routes.newAppointment));
   }
 
-  Future<void> _confirmCancel(BuildContext context) async {
+  Future<void> _confirmCancel(BuildContext context, Client client) async {
     // Desmarcar libera o horario para outra pessoa e nao da para desfazer com
     // um toque. Perguntar aqui custa dois segundos.
     final confirmed = await askToConfirm(
       context,
       title: 'Desmarcar?',
       message:
-          'O horário de ${appointment.client.name} às '
+          'O horário de ${client.name} às '
           '${formatHour(appointment.startsAt)} volta a ficar livre.',
       confirmLabel: 'Desmarcar',
     );
@@ -290,7 +299,7 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
     Navigator.of(context).pop();
     showSnack(
       context,
-      '${appointment.client.name} desmarcado. O horário está livre.',
+      '${client.name} desmarcado. O horário está livre.',
     );
   }
 }

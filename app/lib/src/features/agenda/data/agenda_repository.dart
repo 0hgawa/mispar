@@ -24,6 +24,35 @@ class AgendaRepository {
   Stream<List<Appointment>> watchRange(DateTime from, DateTime to) =>
       _watchRange(from, to);
 
+  /// Grava um atendimento que nao passou pela agenda.
+  ///
+  /// Ja nasce concluido, porque so se lanca o que ja aconteceu, e o preco vem
+  /// digitado e nao da tabela: quem chega sem marcar costuma pagar outro
+  /// valor. Sem cliente quando ninguem foi escolhido.
+  Future<void> lance({
+    required String id,
+    required Service service,
+    required DateTime at,
+    required int priceCents,
+    required PaymentMethod paidWith,
+    String? clientId,
+  }) {
+    return _db
+        .into(_db.appointments)
+        .insert(
+          AppointmentsCompanion.insert(
+            id: id,
+            clientId: Value(clientId),
+            serviceId: service.id,
+            startsAt: at,
+            durationMinutes: service.duration.inMinutes,
+            priceCents: priceCents,
+            status: AppointmentStatus.done.wireName,
+            paymentMethod: Value(paidWith.name),
+          ),
+        );
+  }
+
   /// Grava um horario novo.
   ///
   /// Duracao e preco sao copiados do servico agora, de proposito: se o Marcos
@@ -39,7 +68,7 @@ class AgendaRepository {
         .insert(
           AppointmentsCompanion.insert(
             id: id,
-            clientId: clientId,
+            clientId: Value(clientId),
             serviceId: service.id,
             startsAt: startsAt,
             durationMinutes: service.duration.inMinutes,
@@ -90,7 +119,9 @@ class AgendaRepository {
   Stream<List<Appointment>> _watchRange(DateTime from, DateTime to) {
     final query =
         _db.select(_db.appointments).join([
-            innerJoin(
+            // A esquerda: sem isto, o que foi lancado sem cliente sumiria da
+            // agenda e do caixa.
+            leftOuterJoin(
               _db.clients,
               _db.clients.id.equalsExp(_db.appointments.clientId),
             ),
@@ -115,7 +146,7 @@ class AgendaRepository {
 
   Appointment _toDomain(TypedResult row) {
     final appointment = row.readTable(_db.appointments);
-    final client = row.readTable(_db.clients);
+    final client = row.readTableOrNull(_db.clients);
     final service = row.readTable(_db.services);
 
     return Appointment(
@@ -125,12 +156,14 @@ class AgendaRepository {
       duration: Duration(minutes: appointment.durationMinutes),
       priceCents: appointment.priceCents,
       paidWith: PaymentMethod.parse(appointment.paymentMethod),
-      client: Client(
-        id: client.id,
-        name: client.name,
-        phone: client.phone,
-        note: client.note,
-      ),
+      client: client == null
+          ? null
+          : Client(
+              id: client.id,
+              name: client.name,
+              phone: client.phone,
+              note: client.note,
+            ),
       service: Service(
         id: service.id,
         name: service.name,
