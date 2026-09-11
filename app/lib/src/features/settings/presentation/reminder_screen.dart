@@ -17,15 +17,20 @@ import 'package:material_symbols_icons/symbols.dart';
 /// Estimativa olhando para a frente, e não conta do que já saiu: enquanto o
 /// robô não estiver ligado o que já saiu é sempre zero, e zero não ajuda
 /// ninguém a decidir se vale.
-final remindersNextWeekProvider = StreamProvider<int>((ref) {
-  final now = DateTime.now();
-  final from = DateTime(now.year, now.month, now.day);
+///
+/// `autoDispose` porque a janela é contada a partir de agora: guardado, ele
+/// continuaria somando a semana do dia em que a tela foi aberta pela primeira
+/// vez, e deixaria uma consulta de sete dias escutando o banco para sempre.
+final StreamProvider<int> remindersNextWeekProvider =
+    StreamProvider.autoDispose<int>((ref) {
+      final now = DateTime.now();
+      final from = DateTime(now.year, now.month, now.day);
 
-  return ref
-      .watch(agendaRepositoryProvider)
-      .watchRange(from, from.add(const Duration(days: 7)))
-      .map(remindersFor);
-});
+      return ref
+          .watch(agendaRepositoryProvider)
+          .watchRange(from, from.add(const Duration(days: 7)))
+          .map(remindersFor);
+    });
 
 /// O lembrete que o robô manda sozinho antes do horário.
 ///

@@ -19,7 +19,7 @@ npm install
 node schema.test.mjs
 ```
 
-57 checagens: as migrations aplicam, a sobreposição é recusada, o almoço some
+59 checagens: as migrations aplicam, a sobreposição é recusada, o almoço some
 da disponibilidade, domingo não devolve horário, telefone errado não cancela o
 corte do vizinho, e o lembrete desligado não manda nada.
 

@@ -5,10 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:marcos_barber/src/core/router/app_router.dart';
 import 'package:marcos_barber/src/core/theme/app_colors.dart';
+import 'package:marcos_barber/src/core/theme/status_colors.dart';
 import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
+import 'package:marcos_barber/src/features/clients/domain/win_back.dart';
 import 'package:marcos_barber/src/features/clients/presentation/clients_view_model.dart';
 import 'package:marcos_barber/src/features/clients/presentation/import_contacts_screen.dart';
 import 'package:marcos_barber/src/features/clients/presentation/widgets/client_card.dart';
+import 'package:marcos_barber/src/shared/formatters/money.dart';
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
 import 'package:marcos_barber/src/shared/widgets/empty_state.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
@@ -38,6 +41,7 @@ class ClientsScreen extends ConsumerWidget {
               // cabeçalho enquanto ninguém buscava, e sumia justo na hora em
               // que alguém precisava dela.
               _SearchBar(all: clients),
+              _DriftedBanner(all: clients),
               Expanded(
                 child: clients.isEmpty
                     ? const _NoClients()
@@ -95,6 +99,75 @@ class _Header extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Quantos pararam de vir, e o caminho para chamá-los.
+///
+/// Faixa tingida e não card: o que vem abaixo é uma lista de cards de cliente,
+/// e mais um card seria lido como mais um cliente. Some quando não há ninguém
+/// sumido — aviso permanente de coisa nenhuma vira papel de parede.
+class _DriftedBanner extends StatelessWidget {
+  const new({required this.all});
+
+  final List<ClientSummary> all;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final alert = theme.status.alert;
+    final drifted = winBackList(all);
+    if (drifted.isEmpty) return const SizedBox.shrink();
+
+    final value = formatMoney(winBackValueCents(drifted));
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Dimens.screenGutter,
+        0,
+        Dimens.screenGutter,
+        Dimens.gapMedium,
+      ),
+      child: Material(
+        color: alert.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(Dimens.cardRadius),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => context.push(Routes.drifted),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Dimens.cardPadding,
+              vertical: 13,
+            ),
+            child: Row(
+              children: [
+                Icon(Symbols.person_alert_rounded, weight: 500, color: alert),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    drifted.length == 1
+                        ? '1 cliente sumiu'
+                        : '${drifted.length} clientes sumiram',
+                    style: theme.textTheme.bodyLarge?.copyWith(color: alert),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  value,
+                  style: theme.textTheme.bodyMedium?.copyWith(color: alert),
+                ),
+                Icon(
+                  Symbols.chevron_right_rounded,
+                  weight: 500,
+                  size: 20,
+                  color: alert,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

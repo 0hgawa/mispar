@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:marcos_barber/src/core/theme/status_colors.dart';
 import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
+import 'package:marcos_barber/src/features/clients/presentation/widgets/client_row.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
-import 'package:marcos_barber/src/shared/widgets/app_card.dart';
-import 'package:marcos_barber/src/shared/widgets/initials_avatar.dart';
 
 class ClientCard extends StatelessWidget {
   const new({required this.summary, required this.onTap, super.key});
@@ -13,42 +12,15 @@ class ClientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     final client = summary.client;
 
-    // A anotacao ganha a linha de baixo. E o que faz o Marcos parecer que
-    // lembra de todo mundo; sem ela, mostra o que a pessoa costuma pedir.
-    final detail = client.note ?? summary.usualService ?? client.phone;
-
-    return AppCard(
+    return ClientRow(
+      name: client.name,
+      // A anotacao ganha a linha de baixo. E o que faz o Marcos parecer que
+      // lembra de todo mundo; sem ela, mostra o que a pessoa costuma pedir.
+      detail: client.note ?? summary.usualService ?? client.phone,
+      trailing: _Recency(summary: summary),
       onTap: onTap,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InitialsAvatar(name: client.name),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(client.name, style: theme.textTheme.headlineSmall),
-                const SizedBox(height: 3),
-                Text(
-                  detail,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          _Recency(summary: summary),
-        ],
-      ),
     );
   }
 }

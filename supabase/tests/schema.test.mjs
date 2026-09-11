@@ -359,5 +359,23 @@ const dono = await one(`select confirm_appointment('+5511922222222', '${perto.id
 check('o dono do numero confirma', dono.ok === true, String(dono.ok));
 const marca = await one(`select confirmed_at from appointments where id = '${perto.id}'`);
 check('a confirmacao fica gravada', marca.confirmed_at !== null);
+
+// A lista traz nome e telefone: a chave publica do app nao pode chama-la.
+let anonBarrado = false;
+try {
+  await db.exec('set role anon');
+  await db.query('select * from due_reminders()');
+} catch {
+  anonBarrado = true;
+} finally {
+  await db.exec('reset role');
+}
+check('a chave do app nao puxa a lista de lembretes', anonBarrado);
+
+// E a varredura, que fala como serviceRole, continua chamando.
+await db.exec('set role service_role');
+const comoRobo = await all('select * from due_reminders()');
+await db.exec('reset role');
+check('o robo continua chamando', comoRobo.length === 1, `veio ${comoRobo.length}`);
 console.log(failed === 0 ? '\nTUDO PASSOU' : `\n${failed} FALHA(S)`);
 process.exit(failed === 0 ? 0 : 1);

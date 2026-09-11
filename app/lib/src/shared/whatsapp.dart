@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// O endereço que abre a conversa do WhatsApp com [phone].
@@ -16,11 +17,20 @@ Uri whatsAppUri(String phone, {String? message}) {
 ///
 /// O texto vai pronto mas **nao** e enviado: quem manda e o Marcos. Mensagem
 /// que sai sozinha do celular dele seria o app falando no lugar dele.
-Future<bool> openWhatsApp(String phone, {String? message}) {
-  return launchUrl(
-    whatsAppUri(phone, message: message),
-    mode: LaunchMode.externalApplication,
-  );
+///
+/// Devolve `false` quando não há aplicativo para abrir o endereço. No Android
+/// o `launchUrl` **nunca** devolve false — ele lança `ACTIVITY_NOT_FOUND`. Sem
+/// este catch, quem chama testa um retorno que nunca vem: o aviso de "não
+/// consegui abrir" não aparecia, e o botão simplesmente não fazia nada.
+Future<bool> openWhatsApp(String phone, {String? message}) async {
+  try {
+    return await launchUrl(
+      whatsAppUri(phone, message: message),
+      mode: LaunchMode.externalApplication,
+    );
+  } on PlatformException {
+    return false;
+  }
 }
 
 /// O primeiro nome, que e como se fala com cliente.

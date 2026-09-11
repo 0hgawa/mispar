@@ -6,6 +6,7 @@ import 'package:marcos_barber/src/features/agenda/presentation/agenda_screen.dar
 import 'package:marcos_barber/src/features/booking/presentation/new_appointment_screen.dart';
 import 'package:marcos_barber/src/features/clients/presentation/client_detail_screen.dart';
 import 'package:marcos_barber/src/features/clients/presentation/clients_screen.dart';
+import 'package:marcos_barber/src/features/clients/presentation/drifted_screen.dart';
 import 'package:marcos_barber/src/features/clients/presentation/new_client_screen.dart';
 import 'package:marcos_barber/src/features/reports/presentation/cash_screen.dart';
 import 'package:marcos_barber/src/features/reports/presentation/earned_screen.dart';
@@ -25,6 +26,7 @@ abstract final class Routes {
 
   static const newAppointment = '$agenda/marcar';
   static const newClient = '$clients/novo';
+  static const drifted = '$clients/sumiram';
 
   static String clientDetail(String id) => '$clients/$id';
 
@@ -74,6 +76,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'novo',
                     parentNavigatorKey: _rootNavigator,
                     builder: (context, state) => const NewClientScreen(),
+                  ),
+                  // Filha da aba: e navegacao, a barra continua visivel.
+                  GoRoute(
+                    path: 'sumiram',
+                    builder: (context, state) => const DriftedScreen(),
                   ),
                   // Filha da aba: a ficha abre por cima e a barra continua la.
                   GoRoute(

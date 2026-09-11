@@ -92,3 +92,14 @@ as $$
      and a.status not in ('cancelled', 'no_show')
   returning true;
 $$;
+
+-- Quem pode chamar a lista.
+--
+-- `security definer` passa por cima da RLS, e o PostgREST publica toda funcao
+-- do schema `public` para a chave do app — que viaja dentro do aparelho e nao
+-- e segredo. Sem este revoke, qualquer um com a chave puxaria nome e telefone
+-- de todos os clientes da semana com uma chamada sem argumento.
+--
+-- So a varredura precisa dela, e a varredura fala como serviceRole.
+revoke execute on function public.due_reminders() from public, anon, authenticated;
+grant   execute on function public.due_reminders() to service_role;
