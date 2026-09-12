@@ -18,6 +18,7 @@ import 'package:marcos_barber/src/features/settings/presentation/payments_screen
 import 'package:marcos_barber/src/features/settings/presentation/reminder_screen.dart';
 import 'package:marcos_barber/src/features/settings/presentation/settings_screen.dart';
 import 'package:marcos_barber/src/features/settings/presentation/shop_hours_screen.dart';
+import 'package:marcos_barber/src/features/settings/presentation/shop_screen.dart';
 
 abstract final class Routes {
   static const agenda = '/agenda';
@@ -39,6 +40,7 @@ abstract final class Routes {
   static const reminder = '$settings/lembrete';
   static const driftedRule = '$settings/sumiram';
   static const payments = '$settings/pagamento';
+  static const shop = '$settings/barbearia';
 }
 
 final _rootNavigator = GlobalKey<NavigatorState>();
@@ -148,6 +150,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'pagamento',
                     builder: (context, state) => const PaymentsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'barbearia',
+                    builder: (context, state) => const ShopScreen(),
                   ),
                 ],
               ),

@@ -12,6 +12,7 @@ import 'package:marcos_barber/src/features/agenda/domain/free_slots_message.dart
 import 'package:marcos_barber/src/features/agenda/domain/shop_hours.dart';
 import 'package:marcos_barber/src/features/agenda/presentation/day_view_model.dart';
 import 'package:marcos_barber/src/features/booking/presentation/new_appointment_view_model.dart';
+import 'package:marcos_barber/src/features/settings/domain/shop_profile.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/task_route.dart';
 import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
@@ -237,8 +238,10 @@ class _ShareSlotsScreenState extends State<ShareSlotsScreen> {
 
 /// O cartão que vai para o Stories.
 ///
-/// Sem nome nem logo da barbearia: ele sai na conta dela, e a conta já diz de
-/// quem é. Repetir ali seria assinar a própria carta duas vezes.
+/// Assinado com o @ da barbearia, quando ele existe. No Stories da própria
+/// conta a assinatura é redundante — mas a imagem é encaminhada, cai em grupo
+/// e é salva na galeria, e aí ela é a única coisa que diz de quem é e onde
+/// achar. Em branco, o rodapé simplesmente não tem a linha.
 ///
 /// **A hora é o desenho.** Nada de ícone, fio ou moldura: no meio das fotos
 /// do Stories, o que para o dedo é uma coisa grande e mais nada. Foi assim
@@ -249,15 +252,17 @@ class _ShareSlotsScreenState extends State<ShareSlotsScreen> {
 /// aparelho: a imagem postada não pode depender de o celular estar no modo
 /// escuro naquela hora, senão o mesmo botão gera cartaz claro hoje e escuro
 /// amanhã.
-class _Poster extends StatelessWidget {
+class _Poster extends ConsumerWidget {
   const new({required this.day, required this.hours});
 
   final DateTime day;
   final List<DateTime> hours;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final shop =
+        ref.watch(shopProfileProvider).value ?? const ShopProfile.unknown();
     final now = DateTime.now();
     final isToday =
         day.year == now.year && day.month == now.month && day.day == now.day;
@@ -284,12 +289,32 @@ class _Poster extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              isToday ? 'HOJE · $label' : label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: soft,
-                letterSpacing: 2,
-              ),
+            // A data à esquerda, a assinatura à direita: a linha de cima
+            // estava com metade vazia, e é lá que uma marca costuma morar num
+            // cartaz. Junto do convite ela espremia o "Chama no WhatsApp" e
+            // estouraria com um @ comprido.
+            Row(
+              children: [
+                Text(
+                  isToday ? 'HOJE · $label' : label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: soft,
+                    letterSpacing: 2,
+                  ),
+                ),
+                if (shop.signature.isNotEmpty) ...[
+                  const SizedBox(width: Dimens.gapMedium),
+                  Expanded(
+                    child: Text(
+                      shop.signature,
+                      textAlign: TextAlign.right,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(color: soft),
+                    ),
+                  ),
+                ],
+              ],
             ),
             // Um respiro em cima e outro embaixo: coladas na etiqueta e na
             // frase, as horas pareciam espremidas em vez de grandes.

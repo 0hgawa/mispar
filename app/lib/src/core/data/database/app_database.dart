@@ -21,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
   new() : super(driftDatabase(name: 'marcos_barber'));
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -82,6 +82,12 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           'update appointments set walk_in = 1 where client_id is null',
         );
+      }
+      // v17: o cadastro da barbearia — nome, endereço e o @ do Instagram.
+      if (from < 17) {
+        await m.addColumn(shopSettings, shopSettings.shopName);
+        await m.addColumn(shopSettings, shopSettings.shopAddress);
+        await m.addColumn(shopSettings, shopSettings.shopInstagram);
       }
     },
     beforeOpen: (details) async {

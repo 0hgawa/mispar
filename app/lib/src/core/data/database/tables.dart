@@ -135,6 +135,17 @@ class ShopSettings extends Table {
   /// Quantos dias sem aparecer contam como sumido.
   IntColumn get driftedDays => integer().withDefault(const Constant(60))();
 
+  /// Como a barbearia se chama, onde fica, e o @ dela.
+  ///
+  /// Texto vazio quer dizer "não preenchido" — nulo aqui só daria um segundo
+  /// jeito de dizer a mesma coisa, e quem lê teria que tratar os dois.
+  TextColumn get shopName => text().withDefault(const Constant(''))();
+  TextColumn get shopAddress => text().withDefault(const Constant(''))();
+
+  /// O @ do Instagram, sem arroba e em minúscula. Guardado limpo porque é
+  /// assim que ele entra no endereço do perfil.
+  TextColumn get shopInstagram => text().withDefault(const Constant(''))();
+
   /// As formas de pagamento aceitas, separadas por vírgula.
   ///
   /// Texto e não três colunas: uma quarta forma um dia não vira migração.

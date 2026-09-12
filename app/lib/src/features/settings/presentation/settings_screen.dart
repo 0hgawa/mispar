@@ -40,6 +40,12 @@ class SettingsScreen extends StatelessWidget {
               onTap: () => context.push(Routes.reminder),
             ),
             _Entry(
+              icon: Symbols.storefront_rounded,
+              title: 'A barbearia',
+              detail: 'Nome, endereço e o @ do Instagram',
+              onTap: () => context.push(Routes.shop),
+            ),
+            _Entry(
               icon: Symbols.payments_rounded,
               title: 'Pagamento',
               detail: 'O que a barbearia aceita receber',

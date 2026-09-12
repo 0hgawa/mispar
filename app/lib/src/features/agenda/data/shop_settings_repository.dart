@@ -6,6 +6,7 @@ import 'package:marcos_barber/src/features/agenda/domain/shop_hours.dart';
 import 'package:marcos_barber/src/features/settings/domain/accepted_payments.dart';
 import 'package:marcos_barber/src/features/settings/domain/drifted_rule.dart';
 import 'package:marcos_barber/src/features/settings/domain/reminder_settings.dart';
+import 'package:marcos_barber/src/features/settings/domain/shop_profile.dart';
 
 /// O que se ajusta uma vez e vale para a barbearia inteira.
 ///
@@ -108,6 +109,35 @@ class ShopSettingsRepository {
         );
   }
 
+  /// O cadastro da barbearia.
+  Stream<ShopProfile> watchProfile() {
+    final query = _db.select(_db.shopSettings)
+      ..where((s) => s.id.equals(_theRow));
+
+    return query.watchSingleOrNull().map(
+      (row) => row == null
+          ? const ShopProfile.unknown()
+          : ShopProfile(
+              name: row.shopName,
+              address: row.shopAddress,
+              instagram: row.shopInstagram,
+            ),
+    );
+  }
+
+  Future<void> saveProfile(ShopProfile shop) {
+    return _db
+        .into(_db.shopSettings)
+        .insertOnConflictUpdate(
+          ShopSettingsCompanion.insert(
+            id: const Value(_theRow),
+            shopName: Value(shop.name),
+            shopAddress: Value(shop.address),
+            shopInstagram: Value(shop.instagram),
+          ),
+        );
+  }
+
   Future<void> saveDrifted(DriftedRule rule) {
     return _db
         .into(_db.shopSettings)
@@ -148,4 +178,10 @@ final driftedRuleProvider = StreamProvider<DriftedRule>((ref) {
 /// uma que já foi desligada por meio segundo.
 final acceptedPaymentsProvider = StreamProvider<List<PaymentMethod>>((ref) {
   return ref.watch(shopSettingsRepositoryProvider).watchAcceptedPayments();
+});
+
+/// Como a barbearia se chama, onde fica, e o @ dela. Quem lê: o cartaz de
+/// divulgar horário e a tela de cadastro.
+final shopProfileProvider = StreamProvider<ShopProfile>((ref) {
+  return ref.watch(shopSettingsRepositoryProvider).watchProfile();
 });
