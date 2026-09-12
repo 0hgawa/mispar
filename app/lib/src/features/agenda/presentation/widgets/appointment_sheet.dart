@@ -108,37 +108,76 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
               Text(appointment.who, style: theme.textTheme.headlineMedium),
               const SizedBox(height: 3),
               Text(
+                // Filtrado, e nao so condicional: cliente cadastrado pela tela
+                // de marcar entra sem telefone, e a linha terminava num ponto
+                // solto — "Corte · R$ 40 ·".
                 [
                   appointment.service.name,
                   formatMoney(appointment.priceCents),
-                  if (client != null) client.phone,
-                ].join(' · '),
+                  ?client?.phone,
+                ].where((parte) => parte.isNotEmpty).join(' · '),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
               ),
-              if (note != null) ...[
-                const SizedBox(height: Dimens.gapMedium),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(Dimens.cardPadding),
-                  decoration: BoxDecoration(
-                    color: colors.secondaryContainer,
-                    borderRadius: BorderRadius.circular(Dimens.cardRadius),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'DO JEITO QUE ELE GOSTA',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: colors.onSurfaceVariant,
-                          letterSpacing: 1,
-                        ),
+              // A anotacao aparece sempre que ha ficha — com ou sem texto.
+              //
+              // Vazia ela vira convite, e o toque abre a ficha: e na hora de
+              // chamar o proximo que se lembra do que ele nao gosta, e nao
+              // depois, procurando na aba de clientes. Antes o bloco so
+              // existia para quem ja tinha anotado, e quem nunca anotou nao
+              // descobria que dava.
+              if (client != null) ...[
+                const SizedBox(height: Dimens.gapLarge),
+                Material(
+                  color: colors.secondaryContainer,
+                  borderRadius: BorderRadius.circular(Dimens.cardRadius),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      unawaited(context.push(Routes.clientDetail(client.id)));
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(Dimens.cardPadding),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'DO JEITO QUE ELE GOSTA',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: colors.onSurfaceVariant,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  note ??
+                                      'Nada anotado ainda. Toque para '
+                                          'escrever o corte de sempre.',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: note == null
+                                        ? colors.onSurfaceVariant
+                                        : colors.onSurface,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: Dimens.gapSmall),
+                          Icon(
+                            Symbols.chevron_right_rounded,
+                            size: 20,
+                            weight: 500,
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 5),
-                      Text(note, style: theme.textTheme.bodyMedium),
-                    ],
+                    ),
                   ),
                 ),
               ],
@@ -235,7 +274,7 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
                   onPressed: () => setState(() => _asking = true),
                   child: const Text('Concluir atendimento'),
                 ),
-                const SizedBox(height: Dimens.gapSmall),
+                const SizedBox(height: Dimens.gapMedium),
                 // Falta e o que mais custa caro na cadeira, e o lembrete e o
                 // que mais reduz. Vai com o texto pronto: o Marcos so revisa
                 // e manda.
@@ -244,7 +283,7 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
                   icon: const Icon(Symbols.chat_rounded, size: 20, weight: 500),
                   label: const Text('Lembrar no WhatsApp'),
                 ),
-                const SizedBox(height: Dimens.gapSmall),
+                const SizedBox(height: Dimens.gapMedium),
                 Row(
                   children: [
                     Expanded(

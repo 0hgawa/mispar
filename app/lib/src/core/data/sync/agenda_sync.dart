@@ -87,21 +87,20 @@ class AgendaSync {
                 ),
             ]);
         });
-
-        // Desmarcado no servidor tem que sumir do celular, nao so parar de
-        // atualizar. Sem isto o horario cancelado ficaria preso na tela.
-        final alive = appointments
-            .cast<RemoteAppointment>()
-            .map((a) => a.id)
-            .toList(growable: false);
-
-        await (_database.delete(_database.appointments)..where(
-              (row) =>
-                  row.startsAt.isBiggerOrEqualValue(since) &
-                  row.id.isNotIn(alive),
-            ))
-            .go();
       });
+
+      // A passada **nao apaga** o que o servidor nao tem.
+      //
+      // Ate 12/09/2026 ela apagava: tudo dentro da janela que nao viesse na
+      // resposta sumia do celular. A conta so fecha se o aparelho ja tiver
+      // mandado tudo para cima — e ele nunca mandou, porque a subida ainda
+      // nao existe. Ligado o backend num projeto novo e vazio, a primeira
+      // passada limpou a agenda do aparelho. Aconteceu de verdade, aqui, com
+      // um horario de teste; com a agenda de uma semana teria sido o mesmo.
+      //
+      // Ausencia nao e noticia. O que sumiu de verdade vai chegar pelo livro
+      // dos apagados (`deleted_rows`, migration 0011), que diz **qual** id
+      // morreu e quando — e ai da para apagar sem adivinhar.
     } on Object catch (error) {
       // Sem rede o app continua com o que ja tem. Nao e erro de tela.
       debugPrint('sync falhou: $error');
