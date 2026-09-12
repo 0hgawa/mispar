@@ -261,17 +261,17 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
                     ],
                   ],
                 ),
-                const SizedBox(height: 4),
-                // Anotar depois nao pode travar a cadeira: o atendimento fecha
-                // do mesmo jeito, so sem a forma de pagamento.
-                TextButton(
-                  onPressed: () =>
-                      mark(AppointmentStatus.done, 'Atendimento concluído.'),
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size.fromHeight(Dimens.buttonHeight),
-                  ),
-                  child: const Text('Anotar depois'),
-                ),
+                // Sem "anotar depois".
+                //
+                // Ele nao economizava toque nenhum — sair por ele custava o
+                // mesmo um toque que dizer "Pix" — e fechava o atendimento
+                // **sem** forma de pagamento. O Caixa contava o dinheiro como
+                // recebido do mesmo jeito, entao um fiado virava R$ 40 que a
+                // barbearia acha que tem e nao tem.
+                //
+                // Com ele fora, todo atendimento concluido tem forma de
+                // pagamento, e o extrato volta a servir para conferir a
+                // maquininha. Fiado e outro problema, e vai ter tela propria.
               ] else if (client != null) ...[
                 FilledButton(
                   onPressed: () => setState(() => _asking = true),
