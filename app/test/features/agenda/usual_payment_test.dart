@@ -39,6 +39,8 @@ void main() {
       final history = [
         _paid(PaymentMethod.pix),
         _paid(PaymentMethod.pix),
+        _paid(PaymentMethod.pix),
+        _paid(PaymentMethod.cash),
         _paid(PaymentMethod.cash),
         _paid(null),
       ];
@@ -47,9 +49,48 @@ void main() {
     });
 
     test('empate fica com a ordem dos botoes, e nao pula de lugar', () {
-      final history = [_paid(PaymentMethod.card), _paid(PaymentMethod.cash)];
+      final history = [
+        _paid(PaymentMethod.card),
+        _paid(PaymentMethod.card),
+        _paid(PaymentMethod.cash),
+        _paid(PaymentMethod.cash),
+        _paid(PaymentMethod.pix),
+      ];
 
       expect(usualPayment(history), PaymentMethod.cash);
+    });
+
+    test('um pagamento so nao e costume', () {
+      expect(usualPayment([_paid(PaymentMethod.card)]), isNull);
+    });
+
+    test('nem quatro sao: um cliente atipico nao decide o padrao', () {
+      final history = [
+        _paid(PaymentMethod.card),
+        _paid(PaymentMethod.card),
+        _paid(PaymentMethod.card),
+        _paid(PaymentMethod.card),
+      ];
+
+      expect(usualPayment(history), isNull);
+    });
+
+    test('no quinto o costume aparece', () {
+      final history = [for (var i = 0; i < 5; i++) _paid(PaymentMethod.card)];
+
+      expect(usualPayment(history), PaymentMethod.card);
+    });
+
+    test('pagamento sem forma anotada nao conta para o minimo', () {
+      final history = [
+        _paid(PaymentMethod.pix),
+        _paid(PaymentMethod.pix),
+        _paid(null),
+        _paid(null),
+        _paid(null),
+      ];
+
+      expect(usualPayment(history), isNull);
     });
   });
 

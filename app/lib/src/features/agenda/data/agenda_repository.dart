@@ -244,9 +244,16 @@ final StreamProvider<PaymentMethod?> usualPaymentProvider =
 
       return ref
           .watch(agendaRepositoryProvider)
+          // A janela vai para os dois lados.
+          //
+          // O app deixa concluir um horario marcado para a semana que vem — o
+          // cliente antecipou e pagou. Parando em "amanha", esse pagamento
+          // ficava de fora da conta, e o que sobrava era uma amostra torta:
+          // aqui o Cartao virou padrao com um pagamento so, enquanto dois Pix
+          // marcados para segunda nem eram contados.
           .watchRange(
             today.subtract(const Duration(days: 60)),
-            today.add(const Duration(days: 1)),
+            today.add(const Duration(days: 60)),
             includeSales: true,
           )
           .map(usualPayment);

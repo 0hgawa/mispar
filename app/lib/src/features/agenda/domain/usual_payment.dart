@@ -8,16 +8,28 @@ import 'package:mispar/src/features/agenda/domain/payment_method.dart';
 /// configurar o que já funciona — e quando o movimento muda, ele continua
 /// apontando para o lado errado. Contado, ele se corrige sozinho.
 ///
-/// Nulo quando ainda não houve pagamento anotado. Sem histórico não se inventa
-/// um padrão: as três formas aparecem com o mesmo peso, que é a verdade.
+/// Nulo enquanto não houver pagamento anotado **suficiente**. Sem histórico
+/// não se inventa um padrão: as três formas aparecem com o mesmo peso, que é a
+/// verdade.
+/// Quantos pagamentos anotados antes de chamar aquilo de costume.
+///
+/// Um nao e habito, e nem tres sao. Uma barbearia recebe de dez a vinte vezes
+/// por semana, entao cinco chegam em poucos dias — e antes disso um cliente
+/// atipico decidiria sozinho qual botao nasce preto.
+const _minimoParaCostume = 5;
+
 PaymentMethod? usualPayment(List<Appointment> history) {
   final counted = <PaymentMethod, int>{};
+  var total = 0;
 
   for (final appointment in history) {
     final method = appointment.paidWith;
     if (method == null) continue;
     counted[method] = (counted[method] ?? 0) + 1;
+    total++;
   }
+
+  if (total < _minimoParaCostume) return null;
 
   // Percorrido na ordem do enum, que é a ordem dos botões, e trocando só com
   // contagem **maior**: assim o empate fica com o primeiro botão em vez de
