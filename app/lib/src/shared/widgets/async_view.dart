@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/shared/widgets/empty_state.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/shared/widgets/empty_state.dart';
 
 /// Desenha os tres estados de um [AsyncValue] no mesmo lugar, para nenhuma
 /// tela precisar repetir loading e erro.

@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/core/theme/status_colors.dart';
-import 'package:marcos_barber/src/features/reports/data/expense_category_repository.dart';
-import 'package:marcos_barber/src/features/reports/data/expense_repository.dart';
-import 'package:marcos_barber/src/features/reports/domain/expense.dart';
-import 'package:marcos_barber/src/shared/task_route.dart';
-import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
-import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
-import 'package:marcos_barber/src/shared/widgets/day_button.dart';
-import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
-import 'package:marcos_barber/src/shared/widgets/task_bar.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/core/theme/status_colors.dart';
+import 'package:mispar/src/features/reports/data/expense_category_repository.dart';
+import 'package:mispar/src/features/reports/data/expense_repository.dart';
+import 'package:mispar/src/features/reports/domain/expense.dart';
+import 'package:mispar/src/shared/task_route.dart';
+import 'package:mispar/src/shared/widgets/app_snack.dart';
+import 'package:mispar/src/shared/widgets/bottom_action.dart';
+import 'package:mispar/src/shared/widgets/day_button.dart';
+import 'package:mispar/src/shared/widgets/screen_title.dart';
+import 'package:mispar/src/shared/widgets/task_bar.dart';
 import 'package:uuid/uuid.dart';
 
 /// Lancar ou corrigir um gasto.

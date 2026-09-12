@@ -1,8 +1,8 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
-import 'package:marcos_barber/src/features/agenda/domain/payment_method.dart';
-import 'package:marcos_barber/src/features/clients/domain/client.dart';
-import 'package:marcos_barber/src/features/services/domain/service.dart';
+import 'package:mispar/src/features/agenda/domain/appointment_status.dart';
+import 'package:mispar/src/features/agenda/domain/payment_method.dart';
+import 'package:mispar/src/features/clients/domain/client.dart';
+import 'package:mispar/src/features/services/domain/service.dart';
 
 part 'appointment.freezed.dart';
 

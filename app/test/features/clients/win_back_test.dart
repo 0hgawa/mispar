@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marcos_barber/src/features/clients/domain/client.dart';
-import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
-import 'package:marcos_barber/src/features/clients/domain/win_back.dart';
-import 'package:marcos_barber/src/features/settings/domain/drifted_rule.dart';
+import 'package:mispar/src/features/clients/domain/client.dart';
+import 'package:mispar/src/features/clients/domain/client_summary.dart';
+import 'package:mispar/src/features/clients/domain/win_back.dart';
+import 'package:mispar/src/features/settings/domain/drifted_rule.dart';
 
 const _ligado = DriftedRule(isOn: true, days: 30);
 const _desligado = DriftedRule(isOn: false, days: 30);

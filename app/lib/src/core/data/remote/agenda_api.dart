@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
+import 'package:mispar/src/features/agenda/domain/appointment_status.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Linha crua do Postgres, antes de virar tabela local.

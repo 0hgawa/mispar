@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/features/booking/presentation/new_appointment_view_model.dart';
-import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
-import 'package:marcos_barber/src/features/clients/presentation/clients_view_model.dart';
-import 'package:marcos_barber/src/shared/widgets/app_card.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/features/booking/presentation/new_appointment_view_model.dart';
+import 'package:mispar/src/features/clients/domain/client_summary.dart';
+import 'package:mispar/src/features/clients/presentation/clients_view_model.dart';
+import 'package:mispar/src/shared/widgets/app_card.dart';
 
 /// Escolhe quem vai sentar na cadeira.
 ///

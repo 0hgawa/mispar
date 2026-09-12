@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:marcos_barber/src/core/theme/status_colors.dart';
+import 'package:mispar/src/core/theme/status_colors.dart';
 
 /// Pergunta antes de fazer o que nao tem volta.
 ///

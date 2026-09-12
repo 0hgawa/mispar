@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/core/theme/status_colors.dart';
-import 'package:marcos_barber/src/features/reports/domain/cash_trend.dart';
-import 'package:marcos_barber/src/features/reports/domain/cash_window.dart';
-import 'package:marcos_barber/src/features/reports/presentation/cash_view_model.dart';
-import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/core/theme/status_colors.dart';
+import 'package:mispar/src/features/reports/domain/cash_trend.dart';
+import 'package:mispar/src/features/reports/domain/cash_window.dart';
+import 'package:mispar/src/features/reports/presentation/cash_view_model.dart';
+import 'package:mispar/src/shared/widgets/screen_title.dart';
 
 /// Altura da metade de cima do gráfico.
 const _half = 62.0;

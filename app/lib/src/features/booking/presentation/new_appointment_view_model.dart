@@ -1,15 +1,15 @@
-import 'package:marcos_barber/src/features/agenda/data/agenda_repository.dart';
-import 'package:marcos_barber/src/features/agenda/data/shop_hours_repository.dart';
-import 'package:marcos_barber/src/features/agenda/data/shop_settings_repository.dart';
-import 'package:marcos_barber/src/features/agenda/domain/day_schedule.dart';
-import 'package:marcos_barber/src/features/agenda/domain/shop_hours.dart';
-import 'package:marcos_barber/src/features/agenda/domain/time_block.dart';
-import 'package:marcos_barber/src/features/agenda/presentation/day_view_model.dart';
-import 'package:marcos_barber/src/features/clients/data/client_repository.dart';
-import 'package:marcos_barber/src/features/clients/domain/client.dart';
-import 'package:marcos_barber/src/features/services/data/service_repository.dart';
-import 'package:marcos_barber/src/features/services/domain/catalogue_kind.dart';
-import 'package:marcos_barber/src/features/services/domain/service.dart';
+import 'package:mispar/src/features/agenda/data/agenda_repository.dart';
+import 'package:mispar/src/features/agenda/data/shop_hours_repository.dart';
+import 'package:mispar/src/features/agenda/data/shop_settings_repository.dart';
+import 'package:mispar/src/features/agenda/domain/day_schedule.dart';
+import 'package:mispar/src/features/agenda/domain/shop_hours.dart';
+import 'package:mispar/src/features/agenda/domain/time_block.dart';
+import 'package:mispar/src/features/agenda/presentation/day_view_model.dart';
+import 'package:mispar/src/features/clients/data/client_repository.dart';
+import 'package:mispar/src/features/clients/domain/client.dart';
+import 'package:mispar/src/features/services/data/service_repository.dart';
+import 'package:mispar/src/features/services/domain/catalogue_kind.dart';
+import 'package:mispar/src/features/services/domain/service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 

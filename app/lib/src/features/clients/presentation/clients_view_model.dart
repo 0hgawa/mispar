@@ -1,6 +1,6 @@
-import 'package:marcos_barber/src/features/clients/data/client_repository.dart';
-import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
-import 'package:marcos_barber/src/shared/formatters/text.dart';
+import 'package:mispar/src/features/clients/data/client_repository.dart';
+import 'package:mispar/src/features/clients/domain/client_summary.dart';
+import 'package:mispar/src/shared/formatters/text.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'clients_view_model.g.dart';

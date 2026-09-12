@@ -1,4 +1,4 @@
-# Marcos Barber — Agendamento por WhatsApp
+# Mispar — Agendamento por WhatsApp
 
 Bot de WhatsApp que marca horário na agenda do barbeiro, sem mensalidade.
 Este documento é o resultado do benchmark dos melhores apps de agendamento do

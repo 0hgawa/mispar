@@ -1,4 +1,4 @@
-import 'package:marcos_barber/src/features/agenda/domain/payment_method.dart';
+import 'package:mispar/src/features/agenda/domain/payment_method.dart';
 
 /// As formas de pagamento que a barbearia aceita.
 ///

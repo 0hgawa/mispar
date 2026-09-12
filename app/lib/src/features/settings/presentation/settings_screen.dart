@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:marcos_barber/src/core/router/app_router.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/core/router/app_router.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/shared/widgets/screen_title.dart';
 
 /// Ajustes: o que se configura uma vez e quase nunca se mexe.
 ///

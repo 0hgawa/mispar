@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:intl/intl.dart';
-import 'package:marcos_barber/src/features/agenda/data/agenda_repository.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
-import 'package:marcos_barber/src/features/reports/data/expense_repository.dart';
-import 'package:marcos_barber/src/features/reports/domain/cash_trend.dart';
-import 'package:marcos_barber/src/features/reports/domain/cash_window.dart';
-import 'package:marcos_barber/src/features/reports/domain/expense.dart';
-import 'package:marcos_barber/src/shared/formatters/day_time.dart';
-import 'package:marcos_barber/src/shared/week.dart';
+import 'package:mispar/src/features/agenda/data/agenda_repository.dart';
+import 'package:mispar/src/features/agenda/domain/appointment.dart';
+import 'package:mispar/src/features/agenda/domain/appointment_status.dart';
+import 'package:mispar/src/features/reports/data/expense_repository.dart';
+import 'package:mispar/src/features/reports/domain/cash_trend.dart';
+import 'package:mispar/src/features/reports/domain/cash_window.dart';
+import 'package:mispar/src/features/reports/domain/expense.dart';
+import 'package:mispar/src/shared/formatters/day_time.dart';
+import 'package:mispar/src/shared/week.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'cash_view_model.g.dart';

@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marcos_barber/src/features/agenda/domain/day_schedule.dart';
-import 'package:marcos_barber/src/features/agenda/domain/day_slot.dart';
-import 'package:marcos_barber/src/features/agenda/domain/shop_hours.dart';
-import 'package:marcos_barber/src/features/agenda/domain/time_block.dart';
+import 'package:mispar/src/features/agenda/domain/day_schedule.dart';
+import 'package:mispar/src/features/agenda/domain/day_slot.dart';
+import 'package:mispar/src/features/agenda/domain/shop_hours.dart';
+import 'package:mispar/src/features/agenda/domain/time_block.dart';
 
 final _day = DateTime(2026, 9, 10);
 

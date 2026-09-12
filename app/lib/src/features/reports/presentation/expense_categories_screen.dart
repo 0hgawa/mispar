@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/features/reports/data/expense_category_repository.dart';
-import 'package:marcos_barber/src/features/reports/domain/expense.dart';
-import 'package:marcos_barber/src/features/reports/presentation/expense_category_form.dart';
-import 'package:marcos_barber/src/shared/widgets/async_view.dart';
-import 'package:marcos_barber/src/shared/widgets/page_bar.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/features/reports/data/expense_category_repository.dart';
+import 'package:mispar/src/features/reports/domain/expense.dart';
+import 'package:mispar/src/features/reports/presentation/expense_category_form.dart';
+import 'package:mispar/src/shared/widgets/async_view.dart';
+import 'package:mispar/src/shared/widgets/page_bar.dart';
 
 /// Os tipos de gasto da barbearia.
 ///

@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/shared/widgets/app_card.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/shared/widgets/app_card.dart';
 
 /// A anotacao do cliente — o campo mais importante do app.
 ///

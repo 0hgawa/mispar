@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/features/agenda/data/shop_settings_repository.dart';
-import 'package:marcos_barber/src/features/settings/domain/shop_profile.dart';
-import 'package:marcos_barber/src/shared/links.dart';
-import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
-import 'package:marcos_barber/src/shared/widgets/page_bar.dart';
-import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/features/agenda/data/shop_settings_repository.dart';
+import 'package:mispar/src/features/settings/domain/shop_profile.dart';
+import 'package:mispar/src/shared/links.dart';
+import 'package:mispar/src/shared/widgets/app_snack.dart';
+import 'package:mispar/src/shared/widgets/page_bar.dart';
+import 'package:mispar/src/shared/widgets/screen_title.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// O cadastro da barbearia.

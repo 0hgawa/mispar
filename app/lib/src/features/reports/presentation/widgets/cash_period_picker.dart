@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/features/reports/presentation/cash_view_model.dart';
-import 'package:marcos_barber/src/shared/widgets/app_sheet.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/features/reports/presentation/cash_view_model.dart';
+import 'package:mispar/src/shared/widgets/app_sheet.dart';
 
 /// O recorte de tempo do caixa.
 ///

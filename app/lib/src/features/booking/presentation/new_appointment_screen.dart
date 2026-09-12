@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/features/booking/presentation/new_appointment_view_model.dart';
-import 'package:marcos_barber/src/features/booking/presentation/widgets/client_picker.dart';
-import 'package:marcos_barber/src/shared/formatters/day_time.dart';
-import 'package:marcos_barber/src/shared/formatters/money.dart';
-import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
-import 'package:marcos_barber/src/shared/widgets/async_view.dart';
-import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
-import 'package:marcos_barber/src/shared/widgets/day_button.dart';
-import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
-import 'package:marcos_barber/src/shared/widgets/task_bar.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/features/booking/presentation/new_appointment_view_model.dart';
+import 'package:mispar/src/features/booking/presentation/widgets/client_picker.dart';
+import 'package:mispar/src/shared/formatters/day_time.dart';
+import 'package:mispar/src/shared/formatters/money.dart';
+import 'package:mispar/src/shared/widgets/app_snack.dart';
+import 'package:mispar/src/shared/widgets/async_view.dart';
+import 'package:mispar/src/shared/widgets/bottom_action.dart';
+import 'package:mispar/src/shared/widgets/day_button.dart';
+import 'package:mispar/src/shared/widgets/screen_title.dart';
+import 'package:mispar/src/shared/widgets/task_bar.dart';
 
 /// Marcar horario na mao — para quem chega sem avisar.
 ///

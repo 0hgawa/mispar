@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:marcos_barber/src/shared/widgets/app_card.dart';
-import 'package:marcos_barber/src/shared/widgets/initials_avatar.dart';
+import 'package:mispar/src/shared/widgets/app_card.dart';
+import 'package:mispar/src/shared/widgets/initials_avatar.dart';
 
 /// A linha de um cliente: retrato, nome, uma linha de detalhe, e o que vier
 /// à direita.

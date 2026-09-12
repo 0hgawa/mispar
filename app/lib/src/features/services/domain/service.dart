@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:marcos_barber/src/features/services/domain/catalogue_kind.dart';
+import 'package:mispar/src/features/services/domain/catalogue_kind.dart';
 
 part 'service.freezed.dart';
 

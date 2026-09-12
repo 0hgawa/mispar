@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
-import 'package:marcos_barber/src/features/agenda/domain/payment_method.dart';
-import 'package:marcos_barber/src/features/clients/domain/client.dart';
-import 'package:marcos_barber/src/features/reports/domain/cash_csv.dart';
-import 'package:marcos_barber/src/features/reports/domain/expense.dart';
-import 'package:marcos_barber/src/features/services/domain/service.dart';
+import 'package:mispar/src/features/agenda/domain/appointment.dart';
+import 'package:mispar/src/features/agenda/domain/appointment_status.dart';
+import 'package:mispar/src/features/agenda/domain/payment_method.dart';
+import 'package:mispar/src/features/clients/domain/client.dart';
+import 'package:mispar/src/features/reports/domain/cash_csv.dart';
+import 'package:mispar/src/features/reports/domain/expense.dart';
+import 'package:mispar/src/features/services/domain/service.dart';
 
 Appointment _appointment({
   required DateTime startsAt,

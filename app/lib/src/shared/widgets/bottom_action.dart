@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
 
 /// Rodape das telas de tarefa: o botao principal, sempre no mesmo lugar.
 ///

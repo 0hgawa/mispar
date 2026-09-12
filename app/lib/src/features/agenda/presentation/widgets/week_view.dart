@@ -3,17 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:marcos_barber/src/core/router/app_router.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
-import 'package:marcos_barber/src/features/agenda/domain/day_slot.dart';
-import 'package:marcos_barber/src/features/agenda/presentation/week_view_model.dart';
-import 'package:marcos_barber/src/features/agenda/presentation/widgets/appointment_sheet.dart';
-import 'package:marcos_barber/src/features/booking/presentation/new_appointment_view_model.dart';
-import 'package:marcos_barber/src/shared/formatters/day_time.dart';
-import 'package:marcos_barber/src/shared/widgets/app_card.dart';
-import 'package:marcos_barber/src/shared/widgets/async_view.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/core/router/app_router.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/features/agenda/domain/appointment.dart';
+import 'package:mispar/src/features/agenda/domain/day_slot.dart';
+import 'package:mispar/src/features/agenda/presentation/week_view_model.dart';
+import 'package:mispar/src/features/agenda/presentation/widgets/appointment_sheet.dart';
+import 'package:mispar/src/features/booking/presentation/new_appointment_view_model.dart';
+import 'package:mispar/src/shared/formatters/day_time.dart';
+import 'package:mispar/src/shared/widgets/app_card.dart';
+import 'package:mispar/src/shared/widgets/async_view.dart';
 
 /// A semana inteira numa tela.
 ///

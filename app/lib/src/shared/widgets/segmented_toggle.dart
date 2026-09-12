@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
 
 /// Segmentado compacto: todos os rotulos ficam visiveis o tempo todo.
 ///

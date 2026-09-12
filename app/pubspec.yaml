@@ -1,5 +1,5 @@
-name: marcos_barber
-description: "Agenda e gestao para a Marcos Barber."
+name: mispar
+description: "Agenda, clientes e caixa de barbearia."
 publish_to: 'none'
 version: 0.1.0+1
 

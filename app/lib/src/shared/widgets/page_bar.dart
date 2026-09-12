@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
 
 /// Altura da barra aberta. O Material usa 152 na barra grande; aqui o título
 /// tem 24, não 28, e 112 é o bastante — quanto mais curto o percurso, mais

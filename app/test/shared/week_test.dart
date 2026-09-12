@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marcos_barber/src/shared/week.dart';
+import 'package:mispar/src/shared/week.dart';
 
 void main() {
   group('startOfWeek', () {

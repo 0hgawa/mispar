@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:marcos_barber/src/app.dart';
-import 'package:marcos_barber/src/core/config/env.dart';
-import 'package:marcos_barber/src/core/data/database/app_database.dart';
-import 'package:marcos_barber/src/core/data/database/seed.dart';
-import 'package:marcos_barber/src/core/data/sync/agenda_sync.dart';
-import 'package:marcos_barber/src/features/reports/data/expense_repository.dart';
+import 'package:mispar/src/app.dart';
+import 'package:mispar/src/core/config/env.dart';
+import 'package:mispar/src/core/data/database/app_database.dart';
+import 'package:mispar/src/core/data/database/seed.dart';
+import 'package:mispar/src/core/data/sync/agenda_sync.dart';
+import 'package:mispar/src/features/reports/data/expense_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
@@ -53,9 +53,6 @@ Future<void> main() async {
   }
 
   runApp(
-    UncontrolledProviderScope(
-      container: container,
-      child: const MarcosBarberApp(),
-    ),
+    UncontrolledProviderScope(container: container, child: const MisparApp()),
   );
 }

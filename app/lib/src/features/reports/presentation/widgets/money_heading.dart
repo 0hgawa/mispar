@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/shared/formatters/money.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/shared/formatters/money.dart';
 
 /// Cabeçalho de um grupo do extrato: o nome do grupo e o que ele soma.
 ///

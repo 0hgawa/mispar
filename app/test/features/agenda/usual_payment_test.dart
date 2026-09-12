@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
-import 'package:marcos_barber/src/features/agenda/domain/payment_method.dart';
-import 'package:marcos_barber/src/features/agenda/domain/usual_payment.dart';
-import 'package:marcos_barber/src/features/services/domain/service.dart';
-import 'package:marcos_barber/src/features/settings/domain/accepted_payments.dart';
+import 'package:mispar/src/features/agenda/domain/appointment.dart';
+import 'package:mispar/src/features/agenda/domain/appointment_status.dart';
+import 'package:mispar/src/features/agenda/domain/payment_method.dart';
+import 'package:mispar/src/features/agenda/domain/usual_payment.dart';
+import 'package:mispar/src/features/services/domain/service.dart';
+import 'package:mispar/src/features/settings/domain/accepted_payments.dart';
 
 Appointment _paid(PaymentMethod? method) {
   return Appointment(

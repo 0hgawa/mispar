@@ -1,12 +1,12 @@
-import 'package:marcos_barber/src/features/agenda/data/agenda_repository.dart';
-import 'package:marcos_barber/src/features/agenda/data/shop_hours_repository.dart';
-import 'package:marcos_barber/src/features/agenda/data/time_block_repository.dart';
-import 'package:marcos_barber/src/features/agenda/domain/day_schedule.dart';
-import 'package:marcos_barber/src/features/agenda/domain/day_slot.dart';
-import 'package:marcos_barber/src/features/agenda/domain/shop_hours.dart';
-import 'package:marcos_barber/src/features/agenda/domain/time_block.dart';
-import 'package:marcos_barber/src/features/agenda/presentation/day_view_model.dart';
-import 'package:marcos_barber/src/shared/week.dart';
+import 'package:mispar/src/features/agenda/data/agenda_repository.dart';
+import 'package:mispar/src/features/agenda/data/shop_hours_repository.dart';
+import 'package:mispar/src/features/agenda/data/time_block_repository.dart';
+import 'package:mispar/src/features/agenda/domain/day_schedule.dart';
+import 'package:mispar/src/features/agenda/domain/day_slot.dart';
+import 'package:mispar/src/features/agenda/domain/shop_hours.dart';
+import 'package:mispar/src/features/agenda/domain/time_block.dart';
+import 'package:mispar/src/features/agenda/presentation/day_view_model.dart';
+import 'package:mispar/src/shared/week.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'week_view_model.g.dart';

@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/core/data/database/app_database.dart';
-import 'package:marcos_barber/src/features/services/domain/catalogue_kind.dart';
-import 'package:marcos_barber/src/features/services/domain/service.dart';
+import 'package:mispar/src/core/data/database/app_database.dart';
+import 'package:mispar/src/features/services/domain/catalogue_kind.dart';
+import 'package:mispar/src/features/services/domain/service.dart';
 
 class ServiceRepository {
   const new(this._db);

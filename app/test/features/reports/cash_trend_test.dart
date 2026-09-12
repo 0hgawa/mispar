@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marcos_barber/src/features/reports/domain/cash_trend.dart';
+import 'package:mispar/src/features/reports/domain/cash_trend.dart';
 
 void main() {
   group('monthStarts', () {

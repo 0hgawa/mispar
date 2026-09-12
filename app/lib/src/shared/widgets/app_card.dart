@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
 
 /// O card do app: branco sobre o off-white, canto de 11 e **sem sombra**.
 ///

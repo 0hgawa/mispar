@@ -1,4 +1,4 @@
-import 'package:marcos_barber/src/shared/links.dart';
+import 'package:mispar/src/shared/links.dart';
 
 /// O cadastro da barbearia: como ela se chama, onde fica, e o @ dela.
 ///

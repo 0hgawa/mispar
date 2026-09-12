@@ -1,7 +1,7 @@
 -- Dados que a loja precisa para funcionar no primeiro dia.
 --
 -- Servicos e horario de funcionamento nao sao exemplo: sao a configuracao real
--- da Marcos Barber. Confira os precos antes de aplicar.
+-- da Mispar. Confira os precos antes de aplicar.
 
 insert into services (id, name, duration_minutes, price_cents, requires_deposit) values
   ('pezinho',     'Pezinho',       15,   1500, false),

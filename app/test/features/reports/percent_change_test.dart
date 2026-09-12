@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marcos_barber/src/features/reports/presentation/cash_view_model.dart';
+import 'package:mispar/src/features/reports/presentation/cash_view_model.dart';
 
 void main() {
   group('percentChange', () {

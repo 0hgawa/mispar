@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marcos_barber/src/features/clients/domain/client.dart';
-import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
-import 'package:marcos_barber/src/shared/formatters/text.dart';
+import 'package:mispar/src/features/clients/domain/client.dart';
+import 'package:mispar/src/features/clients/domain/client_summary.dart';
+import 'package:mispar/src/shared/formatters/text.dart';
 
 void main() {
   const client = Client(id: 'c', name: 'Rafael Lima', phone: '+5511988124471');

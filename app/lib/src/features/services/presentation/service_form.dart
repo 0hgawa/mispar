@@ -3,21 +3,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/core/theme/status_colors.dart';
-import 'package:marcos_barber/src/features/services/data/service_repository.dart';
-import 'package:marcos_barber/src/features/services/domain/catalogue_kind.dart';
-import 'package:marcos_barber/src/features/services/domain/service.dart';
-import 'package:marcos_barber/src/shared/formatters/day_time.dart';
-import 'package:marcos_barber/src/shared/formatters/text.dart';
-import 'package:marcos_barber/src/shared/task_route.dart';
-import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
-import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
-import 'package:marcos_barber/src/shared/widgets/confirm.dart';
-import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
-import 'package:marcos_barber/src/shared/widgets/segmented_toggle.dart';
-import 'package:marcos_barber/src/shared/widgets/task_bar.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/core/theme/status_colors.dart';
+import 'package:mispar/src/features/services/data/service_repository.dart';
+import 'package:mispar/src/features/services/domain/catalogue_kind.dart';
+import 'package:mispar/src/features/services/domain/service.dart';
+import 'package:mispar/src/shared/formatters/day_time.dart';
+import 'package:mispar/src/shared/formatters/text.dart';
+import 'package:mispar/src/shared/task_route.dart';
+import 'package:mispar/src/shared/widgets/app_snack.dart';
+import 'package:mispar/src/shared/widgets/bottom_action.dart';
+import 'package:mispar/src/shared/widgets/confirm.dart';
+import 'package:mispar/src/shared/widgets/screen_title.dart';
+import 'package:mispar/src/shared/widgets/segmented_toggle.dart';
+import 'package:mispar/src/shared/widgets/task_bar.dart';
 
 /// Cadastrar ou corrigir um servico.
 ///

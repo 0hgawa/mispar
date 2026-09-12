@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
+import 'package:mispar/src/features/agenda/domain/appointment.dart';
 
 part 'day_slot.freezed.dart';
 

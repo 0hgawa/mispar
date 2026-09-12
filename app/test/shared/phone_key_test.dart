@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marcos_barber/src/shared/formatters/phone.dart';
+import 'package:mispar/src/shared/formatters/phone.dart';
 
 void main() {
   group('phoneKey', () {

@@ -3,16 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:marcos_barber/src/core/router/app_router.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/features/agenda/presentation/day_view_model.dart';
-import 'package:marcos_barber/src/features/agenda/presentation/widgets/day_strip.dart';
-import 'package:marcos_barber/src/features/agenda/presentation/widgets/day_view.dart';
-import 'package:marcos_barber/src/features/agenda/presentation/widgets/share_slots_screen.dart';
-import 'package:marcos_barber/src/features/agenda/presentation/widgets/week_view.dart';
-import 'package:marcos_barber/src/features/booking/presentation/new_appointment_view_model.dart';
-import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/core/router/app_router.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/features/agenda/presentation/day_view_model.dart';
+import 'package:mispar/src/features/agenda/presentation/widgets/day_strip.dart';
+import 'package:mispar/src/features/agenda/presentation/widgets/day_view.dart';
+import 'package:mispar/src/features/agenda/presentation/widgets/share_slots_screen.dart';
+import 'package:mispar/src/features/agenda/presentation/widgets/week_view.dart';
+import 'package:mispar/src/features/booking/presentation/new_appointment_view_model.dart';
+import 'package:mispar/src/shared/formatters/day_time.dart';
 
 /// Como o Marcos esta olhando a agenda agora.
 enum AgendaView { day, week }

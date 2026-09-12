@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/features/reports/domain/expense.dart';
-import 'package:marcos_barber/src/features/reports/presentation/cash_view_model.dart';
-import 'package:marcos_barber/src/features/reports/presentation/expense_form.dart';
-import 'package:marcos_barber/src/features/reports/presentation/widgets/money_heading.dart';
-import 'package:marcos_barber/src/shared/formatters/day_time.dart';
-import 'package:marcos_barber/src/shared/formatters/money.dart';
-import 'package:marcos_barber/src/shared/widgets/async_view.dart';
-import 'package:marcos_barber/src/shared/widgets/empty_state.dart';
-import 'package:marcos_barber/src/shared/widgets/page_bar.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/features/reports/domain/expense.dart';
+import 'package:mispar/src/features/reports/presentation/cash_view_model.dart';
+import 'package:mispar/src/features/reports/presentation/expense_form.dart';
+import 'package:mispar/src/features/reports/presentation/widgets/money_heading.dart';
+import 'package:mispar/src/shared/formatters/day_time.dart';
+import 'package:mispar/src/shared/formatters/money.dart';
+import 'package:mispar/src/shared/widgets/async_view.dart';
+import 'package:mispar/src/shared/widgets/empty_state.dart';
+import 'package:mispar/src/shared/widgets/page_bar.dart';
 
 /// O extrato do que saiu.
 ///

@@ -1,6 +1,6 @@
 import 'package:flutter_contacts/flutter_contacts.dart';
-import 'package:marcos_barber/src/shared/formatters/phone.dart';
-import 'package:marcos_barber/src/shared/formatters/text.dart';
+import 'package:mispar/src/shared/formatters/phone.dart';
+import 'package:mispar/src/shared/formatters/text.dart';
 
 /// Um contato da agenda do celular, reduzido ao que a barbearia usa.
 class PhoneContact {

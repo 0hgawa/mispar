@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/core/theme/status_colors.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/core/theme/status_colors.dart';
 
 /// Tema medido do app de referencia (Biblia YouVersion): fundo off-white
 /// quente, card branco, **sem sombra** — a separacao e por tom e por espaco.

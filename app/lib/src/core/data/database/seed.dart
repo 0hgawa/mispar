@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
-import 'package:marcos_barber/src/core/data/database/app_database.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
+import 'package:mispar/src/core/data/database/app_database.dart';
+import 'package:mispar/src/features/agenda/domain/appointment_status.dart';
 
 /// Popula o banco na primeira abertura.
 ///
@@ -75,7 +75,7 @@ Future<void> seedDatabase(AppDatabase db) async {
   if (kDebugMode) await _seedDemoDay(db);
 }
 
-/// Horario de funcionamento da Marcos Barber. Os mesmos valores do Postgres —
+/// Horario de funcionamento da Mispar. Os mesmos valores do Postgres —
 /// sexta fecha mais tarde, sabado abre mais cedo e nao para para almocar.
 Future<void> _seedHours(AppDatabase db) async {
   const h = 60;

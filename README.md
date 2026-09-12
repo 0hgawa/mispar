@@ -1,4 +1,4 @@
-# Marcos Barber
+# Mispar
 
 Agenda e gestão para barbearia. Agendamento pelo WhatsApp, sem mensalidade.
 

@@ -1,12 +1,12 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/core/data/database/app_database.dart';
-import 'package:marcos_barber/src/features/agenda/domain/payment_method.dart';
-import 'package:marcos_barber/src/features/agenda/domain/shop_hours.dart';
-import 'package:marcos_barber/src/features/settings/domain/accepted_payments.dart';
-import 'package:marcos_barber/src/features/settings/domain/drifted_rule.dart';
-import 'package:marcos_barber/src/features/settings/domain/reminder_settings.dart';
-import 'package:marcos_barber/src/features/settings/domain/shop_profile.dart';
+import 'package:mispar/src/core/data/database/app_database.dart';
+import 'package:mispar/src/features/agenda/domain/payment_method.dart';
+import 'package:mispar/src/features/agenda/domain/shop_hours.dart';
+import 'package:mispar/src/features/settings/domain/accepted_payments.dart';
+import 'package:mispar/src/features/settings/domain/drifted_rule.dart';
+import 'package:mispar/src/features/settings/domain/reminder_settings.dart';
+import 'package:mispar/src/features/settings/domain/shop_profile.dart';
 
 /// O que se ajusta uma vez e vale para a barbearia inteira.
 ///

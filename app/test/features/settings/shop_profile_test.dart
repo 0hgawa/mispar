@@ -1,36 +1,33 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marcos_barber/src/features/settings/domain/shop_profile.dart';
+import 'package:mispar/src/features/settings/domain/shop_profile.dart';
 
 void main() {
   group('readHandle', () {
     test('a arroba digitada nao entra no endereco', () {
-      expect(readHandle('@marcosbarber'), 'marcosbarber');
+      expect(readHandle('@mispar'), 'mispar');
     });
 
     test('so o nome ja serve', () {
-      expect(readHandle('marcosbarber'), 'marcosbarber');
+      expect(readHandle('mispar'), 'mispar');
     });
 
     test('o link inteiro do perfil vira o nome', () {
-      expect(
-        readHandle('https://www.instagram.com/marcosbarber/'),
-        'marcosbarber',
-      );
+      expect(readHandle('https://www.instagram.com/mispar/'), 'mispar');
     });
 
     test('o link sem http tambem', () {
-      expect(readHandle('instagram.com/marcosbarber'), 'marcosbarber');
+      expect(readHandle('instagram.com/mispar'), 'mispar');
     });
 
     test('o rastreio pendurado no link compartilhado cai fora', () {
       expect(
-        readHandle('https://instagram.com/marcosbarber?igshid=abc123'),
-        'marcosbarber',
+        readHandle('https://instagram.com/mispar?igshid=abc123'),
+        'mispar',
       );
     });
 
     test('maiuscula vira minuscula, que e como o endereco e escrito', () {
-      expect(readHandle('  MarcosBarber '), 'marcosbarber');
+      expect(readHandle('  Mispar '), 'mispar');
     });
 
     test('ponto e traco baixo ficam, que o Instagram aceita', () {
@@ -38,7 +35,7 @@ void main() {
     });
 
     test('espaco no meio e engano de digitacao, e nao endereco', () {
-      expect(readHandle('marcos barber'), 'marcosbarber');
+      expect(readHandle('barbearia do marcos'), 'barbeariadomarcos');
     });
 
     test('campo vazio continua vazio', () {

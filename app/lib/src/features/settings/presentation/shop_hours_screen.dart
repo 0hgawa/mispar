@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/features/agenda/data/shop_hours_repository.dart';
-import 'package:marcos_barber/src/features/agenda/data/shop_settings_repository.dart';
-import 'package:marcos_barber/src/features/agenda/data/time_block_repository.dart';
-import 'package:marcos_barber/src/features/agenda/domain/shop_hours.dart';
-import 'package:marcos_barber/src/features/agenda/domain/time_block.dart';
-import 'package:marcos_barber/src/shared/formatters/day_time.dart';
-import 'package:marcos_barber/src/shared/widgets/app_sheet.dart';
-import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
-import 'package:marcos_barber/src/shared/widgets/async_view.dart';
-import 'package:marcos_barber/src/shared/widgets/page_bar.dart';
-import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/features/agenda/data/shop_hours_repository.dart';
+import 'package:mispar/src/features/agenda/data/shop_settings_repository.dart';
+import 'package:mispar/src/features/agenda/data/time_block_repository.dart';
+import 'package:mispar/src/features/agenda/domain/shop_hours.dart';
+import 'package:mispar/src/features/agenda/domain/time_block.dart';
+import 'package:mispar/src/shared/formatters/day_time.dart';
+import 'package:mispar/src/shared/widgets/app_sheet.dart';
+import 'package:mispar/src/shared/widgets/app_snack.dart';
+import 'package:mispar/src/shared/widgets/async_view.dart';
+import 'package:mispar/src/shared/widgets/page_bar.dart';
+import 'package:mispar/src/shared/widgets/screen_title.dart';
 import 'package:uuid/uuid.dart';
 
 /// A semana padrao da barbearia.

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/features/clients/data/client_repository.dart';
-import 'package:marcos_barber/src/features/clients/domain/client.dart';
-import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
-import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
-import 'package:marcos_barber/src/shared/widgets/confirm.dart';
-import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
-import 'package:marcos_barber/src/shared/widgets/task_bar.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/features/clients/data/client_repository.dart';
+import 'package:mispar/src/features/clients/domain/client.dart';
+import 'package:mispar/src/shared/widgets/app_snack.dart';
+import 'package:mispar/src/shared/widgets/bottom_action.dart';
+import 'package:mispar/src/shared/widgets/confirm.dart';
+import 'package:mispar/src/shared/widgets/screen_title.dart';
+import 'package:mispar/src/shared/widgets/task_bar.dart';
 import 'package:uuid/uuid.dart';
 
 /// Cadastrar cliente na mao — para quem chega sem nunca ter marcado.

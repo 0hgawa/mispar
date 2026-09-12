@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
-import 'package:marcos_barber/src/features/agenda/domain/day_schedule.dart';
-import 'package:marcos_barber/src/features/agenda/domain/day_slot.dart';
-import 'package:marcos_barber/src/features/agenda/domain/shop_hours.dart';
-import 'package:marcos_barber/src/features/clients/domain/client.dart';
-import 'package:marcos_barber/src/features/services/domain/service.dart';
+import 'package:mispar/src/features/agenda/domain/appointment.dart';
+import 'package:mispar/src/features/agenda/domain/appointment_status.dart';
+import 'package:mispar/src/features/agenda/domain/day_schedule.dart';
+import 'package:mispar/src/features/agenda/domain/day_slot.dart';
+import 'package:mispar/src/features/agenda/domain/shop_hours.dart';
+import 'package:mispar/src/features/clients/domain/client.dart';
+import 'package:mispar/src/features/services/domain/service.dart';
 
 void main() {
   // Horario de uma quinta-feira: 9h as 19h com almoco de 12:10 as 13:30.

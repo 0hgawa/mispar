@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/features/agenda/data/shop_settings_repository.dart';
-import 'package:marcos_barber/src/features/agenda/domain/payment_method.dart';
-import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
-import 'package:marcos_barber/src/shared/widgets/page_bar.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/features/agenda/data/shop_settings_repository.dart';
+import 'package:mispar/src/features/agenda/domain/payment_method.dart';
+import 'package:mispar/src/shared/widgets/app_snack.dart';
+import 'package:mispar/src/shared/widgets/page_bar.dart';
 
 /// O que a barbearia aceita receber.
 ///

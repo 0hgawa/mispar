@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marcos_barber/src/features/reports/domain/cash_days.dart';
+import 'package:mispar/src/features/reports/domain/cash_days.dart';
 
 typedef _Take = ({DateTime at, int cents});
 

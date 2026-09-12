@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marcos_barber/src/features/services/domain/catalogue_kind.dart';
+import 'package:mispar/src/features/services/domain/catalogue_kind.dart';
 
 void main() {
   group('CatalogueKind.fromWire', () {

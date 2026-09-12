@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/core/config/env.dart';
-import 'package:marcos_barber/src/core/theme/app_colors.dart';
-import 'package:marcos_barber/src/features/agenda/data/agenda_repository.dart';
-import 'package:marcos_barber/src/features/agenda/data/shop_settings_repository.dart';
-import 'package:marcos_barber/src/features/settings/domain/reminder_settings.dart';
-import 'package:marcos_barber/src/shared/formatters/money.dart';
-import 'package:marcos_barber/src/shared/widgets/app_card.dart';
-import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
-import 'package:marcos_barber/src/shared/widgets/page_bar.dart';
-import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:mispar/src/core/config/env.dart';
+import 'package:mispar/src/core/theme/app_colors.dart';
+import 'package:mispar/src/features/agenda/data/agenda_repository.dart';
+import 'package:mispar/src/features/agenda/data/shop_settings_repository.dart';
+import 'package:mispar/src/features/settings/domain/reminder_settings.dart';
+import 'package:mispar/src/shared/formatters/money.dart';
+import 'package:mispar/src/shared/widgets/app_card.dart';
+import 'package:mispar/src/shared/widgets/app_snack.dart';
+import 'package:mispar/src/shared/widgets/page_bar.dart';
+import 'package:mispar/src/shared/widgets/screen_title.dart';
 
 /// Quantos lembretes a próxima semana geraria, pela agenda do aparelho.
 ///

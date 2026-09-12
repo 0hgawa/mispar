@@ -1,4 +1,4 @@
--- Marcos Barber — esquema base.
+-- Mispar — esquema base.
 --
 -- Duas regras guiam este arquivo:
 --   1. A agenda nao pode ter dois clientes no mesmo horario. Isso e garantido

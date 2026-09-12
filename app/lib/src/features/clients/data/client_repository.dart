@@ -1,11 +1,11 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/core/data/database/app_database.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
-import 'package:marcos_barber/src/features/clients/domain/client.dart';
-import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
-import 'package:marcos_barber/src/shared/formatters/phone.dart';
-import 'package:marcos_barber/src/shared/formatters/text.dart';
+import 'package:mispar/src/core/data/database/app_database.dart';
+import 'package:mispar/src/features/agenda/domain/appointment_status.dart';
+import 'package:mispar/src/features/clients/domain/client.dart';
+import 'package:mispar/src/features/clients/domain/client_summary.dart';
+import 'package:mispar/src/shared/formatters/phone.dart';
+import 'package:mispar/src/shared/formatters/text.dart';
 
 class ClientRepository {
   const new(this._db);

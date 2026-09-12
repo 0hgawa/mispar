@@ -1,4 +1,4 @@
-import 'package:marcos_barber/src/features/agenda/domain/shop_hours.dart'
+import 'package:mispar/src/features/agenda/domain/shop_hours.dart'
     show DayHours;
 
 /// Uma faixa em que a barbearia nao atende, fora do horario normal.

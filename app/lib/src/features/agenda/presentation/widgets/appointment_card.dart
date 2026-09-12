@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
-import 'package:marcos_barber/src/features/agenda/presentation/widgets/status_chip.dart';
-import 'package:marcos_barber/src/shared/formatters/day_time.dart';
-import 'package:marcos_barber/src/shared/formatters/money.dart';
-import 'package:marcos_barber/src/shared/widgets/app_card.dart';
+import 'package:mispar/src/features/agenda/domain/appointment.dart';
+import 'package:mispar/src/features/agenda/domain/appointment_status.dart';
+import 'package:mispar/src/features/agenda/presentation/widgets/status_chip.dart';
+import 'package:mispar/src/shared/formatters/day_time.dart';
+import 'package:mispar/src/shared/formatters/money.dart';
+import 'package:mispar/src/shared/widgets/app_card.dart';
 
 /// Um horário marcado, na lista do dia.
 ///

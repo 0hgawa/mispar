@@ -1,4 +1,4 @@
-import 'package:marcos_barber/src/features/clients/domain/client.dart';
+import 'package:mispar/src/features/clients/domain/client.dart';
 
 /// O cliente com o que a barbearia sabe sobre ele.
 ///

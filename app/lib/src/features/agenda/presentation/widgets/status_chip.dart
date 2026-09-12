@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:marcos_barber/src/core/theme/status_colors.dart';
-import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
+import 'package:mispar/src/core/theme/status_colors.dart';
+import 'package:mispar/src/features/agenda/domain/appointment_status.dart';
 
 /// Situacao do horario.
 ///

@@ -1,4 +1,4 @@
-package com.marcosbarber.marcos_barber
+package com.mispar.app
 
 import io.flutter.embedding.android.FlutterActivity
 

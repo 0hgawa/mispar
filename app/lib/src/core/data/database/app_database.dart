@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marcos_barber/src/core/data/database/tables.dart';
+import 'package:mispar/src/core/data/database/tables.dart';
 
 part 'app_database.g.dart';
 
@@ -18,7 +18,7 @@ part 'app_database.g.dart';
   ],
 )
 class AppDatabase extends _$AppDatabase {
-  new() : super(driftDatabase(name: 'marcos_barber'));
+  new() : super(driftDatabase(name: 'mispar'));
 
   @override
   int get schemaVersion => 17;

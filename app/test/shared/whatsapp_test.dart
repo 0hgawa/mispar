@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marcos_barber/src/shared/whatsapp.dart';
+import 'package:mispar/src/shared/whatsapp.dart';
 
 void main() {
   group('whatsAppUri', () {

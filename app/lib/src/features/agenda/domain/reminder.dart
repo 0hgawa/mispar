@@ -1,5 +1,5 @@
-import 'package:marcos_barber/src/shared/formatters/day_time.dart';
-import 'package:marcos_barber/src/shared/whatsapp.dart';
+import 'package:mispar/src/shared/formatters/day_time.dart';
+import 'package:mispar/src/shared/whatsapp.dart';
 
 /// O texto do lembrete que o Marcos manda para o cliente.
 ///

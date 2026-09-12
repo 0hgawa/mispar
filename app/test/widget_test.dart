@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marcos_barber/src/shared/widgets/empty_state.dart';
+import 'package:mispar/src/shared/widgets/empty_state.dart';
 
 void main() {
   testWidgets('EmptyState mostra titulo e mensagem', (tester) async {

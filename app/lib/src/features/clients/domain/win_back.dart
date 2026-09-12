@@ -1,6 +1,6 @@
-import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
-import 'package:marcos_barber/src/features/settings/domain/drifted_rule.dart';
-import 'package:marcos_barber/src/shared/whatsapp.dart';
+import 'package:mispar/src/features/clients/domain/client_summary.dart';
+import 'package:mispar/src/features/settings/domain/drifted_rule.dart';
+import 'package:mispar/src/shared/whatsapp.dart';
 
 /// Quem sumiu, na ordem de quem vale mais chamar.
 ///

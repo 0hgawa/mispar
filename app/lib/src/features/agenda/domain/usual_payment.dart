@@ -1,5 +1,5 @@
-import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
-import 'package:marcos_barber/src/features/agenda/domain/payment_method.dart';
+import 'package:mispar/src/features/agenda/domain/appointment.dart';
+import 'package:mispar/src/features/agenda/domain/payment_method.dart';
 
 /// Como a barbearia costuma receber.
 ///

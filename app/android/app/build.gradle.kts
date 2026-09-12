@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.marcosbarber.marcos_barber"
+    namespace = "com.mispar.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -15,7 +15,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.marcosbarber.marcos_barber"
+        applicationId = "com.mispar.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

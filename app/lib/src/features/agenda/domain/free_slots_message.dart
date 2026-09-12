@@ -1,4 +1,4 @@
-import 'package:marcos_barber/src/shared/formatters/day_time.dart';
+import 'package:mispar/src/shared/formatters/day_time.dart';
 
 /// Os horários livres em uma mensagem, para colar numa conversa.
 ///

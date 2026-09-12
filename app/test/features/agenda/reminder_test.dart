@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:marcos_barber/src/features/agenda/domain/reminder.dart';
-import 'package:marcos_barber/src/shared/whatsapp.dart';
+import 'package:mispar/src/features/agenda/domain/reminder.dart';
+import 'package:mispar/src/shared/whatsapp.dart';
 
 void main() {
   setUpAll(() => initializeDateFormatting('pt_BR'));

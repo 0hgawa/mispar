@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
-import 'package:marcos_barber/src/features/clients/presentation/widgets/client_row.dart';
+import 'package:mispar/src/features/clients/domain/client_summary.dart';
+import 'package:mispar/src/features/clients/presentation/widgets/client_row.dart';
 
 class ClientCard extends StatelessWidget {
   const new({required this.summary, required this.onTap, super.key});
