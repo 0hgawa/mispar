@@ -26,6 +26,7 @@ for (const file of [
   '0007_slot_step.sql',
   '0008_products_and_walk_ins.sql',
   '0009_reminder.sql',
+  '0010_full_copy.sql',
 ]) {
   try {
     await db.exec(readFileSync(DIR + file, 'utf8'));
@@ -377,5 +378,37 @@ await db.exec('set role service_role');
 const comoRobo = await all('select * from due_reminders()');
 await db.exec('reset role');
 check('o robo continua chamando', comoRobo.length === 1, `veio ${comoRobo.length}`);
+// ---- 12. a copia completa: o servidor guarda o que o aparelho guarda ----
+
+// Venda de balcao se declara, e nao se adivinha pela falta de cliente.
+const balcao = await one('select walk_in from appointments limit 1');
+check('horario marcado nasce sem ser balcao', balcao.walk_in === false, String(balcao.walk_in));
+
+// O que o app ajusta sobe junto, mesmo o que o robo nunca le: esta aqui para
+// nao se perder, e nao para ser usado.
+const ajustes = await one(`
+  select drifted_enabled, drifted_days, accepted_payments,
+         shop_name, shop_address, shop_instagram
+    from shop_settings`);
+check('o aviso de sumido vem ligado, com 60 dias',
+  ajustes.drifted_enabled === true && ajustes.drifted_days === 60,
+  ajustes.drifted_enabled + ' / ' + ajustes.drifted_days);
+check('de fabrica a barbearia aceita as tres formas',
+  ajustes.accepted_payments === 'cash,pix,card', ajustes.accepted_payments);
+check('cadastro da barbearia comeca vazio, e nao nulo',
+  ajustes.shop_name === '' && ajustes.shop_address === '' && ajustes.shop_instagram === '');
+
+// Prazo fora da conta e engano de digitacao, e passaria adiante escondendo
+// clientes da lista ou acusando quem cortou sabado passado.
+let prazoAbsurdo = false;
+try { await db.exec('update shop_settings set drifted_days = 2'); } catch { prazoAbsurdo = true; }
+check('prazo de sumido menor que uma semana e recusado', prazoAbsurdo);
+let prazoLongo = false;
+try { await db.exec('update shop_settings set drifted_days = 400'); } catch { prazoLongo = true; }
+check('prazo maior que um ano e recusado', prazoLongo);
+await db.exec('update shop_settings set drifted_days = 90');
+const mudou = await one('select drifted_days from shop_settings');
+check('prazo dentro da conta grava', mudou.drifted_days === 90, String(mudou.drifted_days));
+
 console.log(failed === 0 ? '\nTUDO PASSOU' : `\n${failed} FALHA(S)`);
 process.exit(failed === 0 ? 0 : 1);

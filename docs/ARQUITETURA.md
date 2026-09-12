@@ -84,13 +84,26 @@ consequencias que valem o desenho:
 - Falha de rede nao vira tela de erro: fica o que ja tinha, e a proxima passada
   reconcilia.
 
-**Escrita vai para o servidor primeiro.** Concluir ou marcar falta chama o
-Postgres; o realtime devolve a mudanca e o SQLite atualiza. Nao existe fila de
-escrita offline ainda — sem rede, o botao falha e avisa.
+**Escrita e local primeiro, e sobe depois.** Concluir, marcar falta, lancar
+uma despesa: tudo grava no SQLite e a tela ja reage. A subida acontece quando
+houver rede.
+
+> Ate 12/09/2026 este trecho dizia o contrario — "escrita vai para o servidor
+> primeiro" — e o codigo nunca fez isso: `AgendaApi.updateStatus` existia sem
+> ninguem chamar, e o `AgendaSync` so puxava. O plano antigo tambem estava
+> errado para uma barbearia: com a escrita indo direto ao servidor, concluir
+> atendimento para de funcionar quando o wi-fi cai, que e justamente a hora em
+> que o Marcos esta com a tesoura na mao.
 
 **Sem Supabase configurado o app roda so local.** `Env.hasBackend` decide. Isso
-nao e contorno: o local-first e a arquitetura, a nuvem e a fonte de verdade
-quando existe.
+nao e contorno: o local-first e a arquitetura, a nuvem e a copia de tudo e a
+fonte do que o robo escreve.
+
+**A nuvem guarda tudo, e nao so o que o robo le.** Desde a migracao 0010 o
+Postgres espelha o schema do Drift, inclusive ajustes que o robo nunca vai
+consultar. Eles estao la para nao se perderem: celular quebrado entra com
+e-mail e senha e volta inteiro. A RLS ja e escrita para `authenticated` desde
+a 0001 — o login e o modelo assumido desde o comeco.
 
 ## Uma palavra por conceito
 
