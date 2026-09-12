@@ -88,6 +88,15 @@ class RemoteService {
 }
 
 /// Fala com o Postgres do Supabase. Nao conhece o banco local nem a tela.
+/// Uma lápide do servidor: o que sumiu, de onde, e quando.
+class RemoteDeletion {
+  const new({required this.table, required this.id, required this.at});
+
+  final String table;
+  final String id;
+  final DateTime at;
+}
+
 class AgendaApi {
   const new(this._client);
 
@@ -127,6 +136,41 @@ class AgendaApi {
   Future<void> pushRows(String table, List<Map<String, dynamic>> rows) async {
     if (rows.isEmpty) return;
     await _client.from(table).upsert(rows);
+  }
+
+  /// Apaga no servidor o que foi apagado no aparelho.
+  ///
+  /// Por id, e nunca por ausencia: o celular so guarda noventa dias de agenda,
+  /// entao "o servidor tem e eu nao" quer dizer "e mais antigo que a minha
+  /// janela" muito mais vezes do que quer dizer "foi apagado".
+  Future<void> deleteRows(String table, List<String> ids) async {
+    if (ids.isEmpty) return;
+    await _client.from(table).delete().inFilter('id', ids);
+  }
+
+  /// O que foi apagado no servidor depois de [since].
+  ///
+  /// Traz a data junto de propósito: é dela que sai a marca da próxima
+  /// passada. Nada de perguntar a hora ao servidor nem confiar no relógio do
+  /// aparelho — a marca é o carimbo da última lápide que a gente **de fato**
+  /// processou, e não um instante que alguém achou que era agora.
+  ///
+  /// Sem [since] traz o livro inteiro, que é o que um aparelho novo precisa.
+  Future<List<RemoteDeletion>> fetchDeletions(DateTime? since) async {
+    var query = _client.from('deleted_rows').select();
+    if (since != null) {
+      query = query.gt('deleted_at', since.toUtc().toIso8601String());
+    }
+
+    final rows = await query;
+    return [
+      for (final row in rows)
+        RemoteDeletion(
+          table: row['table_name'] as String,
+          id: row['row_id'] as String,
+          at: DateTime.parse(row['deleted_at'] as String).toLocal(),
+        ),
+    ];
   }
 
   /// Avisa a cada mudanca na tabela de agendamentos.

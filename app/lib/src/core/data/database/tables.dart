@@ -207,3 +207,39 @@ class Appointments extends Table {
   @override
   Set<Column<Object>> get primaryKey => {id};
 }
+
+/// O livro dos apagados, igual ao do servidor.
+///
+/// Consulta não enxerga o que sumiu: a linha não está mais lá para dizer que
+/// se foi. Sem este livro, apagar um cliente no celular o deixaria no servidor
+/// para sempre — e a cópia, que existe para devolver a barbearia inteira,
+/// devolveria gente que o Marcos tirou de propósito.
+///
+/// Quem escreve aqui é gatilho do SQLite, e não as telas: espalhar essa
+/// responsabilidade por seis repositórios é garantir que um deles esqueça.
+class DeletedRows extends Table {
+  /// `sourceTable` e nao `tableName`: o Drift ja usa esse nome para a propria
+  /// tabela. O nome no banco continua `table_name`, igual ao do servidor.
+  TextColumn get sourceTable => text().named('table_name')();
+  TextColumn get rowId => text()();
+  DateTimeColumn get deletedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {sourceTable, rowId};
+}
+
+/// Onde a sincronia parou.
+///
+/// Fica fora de [ShopSettings] de propósito: ajuste da barbearia sobe para o
+/// servidor, e isto é do aparelho. Dois celulares do mesmo dono param em
+/// lugares diferentes.
+class SyncState extends Table {
+  IntColumn get id => integer().withDefault(const Constant(1))();
+
+  /// A hora do servidor na última descida completa. É a partir dela que se
+  /// pergunta "o que foi apagado desde então?".
+  DateTimeColumn get lastPulledAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}

@@ -18,6 +18,7 @@ import 'package:mispar/src/features/clients/domain/client.dart';
 import 'package:mispar/src/features/reports/presentation/income_form.dart';
 import 'package:mispar/src/shared/formatters/day_time.dart';
 import 'package:mispar/src/shared/formatters/money.dart';
+import 'package:mispar/src/shared/formatters/phone.dart';
 import 'package:mispar/src/shared/whatsapp.dart';
 import 'package:mispar/src/shared/widgets/app_snack.dart';
 import 'package:mispar/src/shared/widgets/confirm.dart';
@@ -117,7 +118,7 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
                 [
                   appointment.service.name,
                   formatMoney(appointment.priceCents),
-                  ?client?.phone,
+                  if (client != null) formatPhone(client.phone),
                 ].where((parte) => parte.isNotEmpty).join(' · '),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,

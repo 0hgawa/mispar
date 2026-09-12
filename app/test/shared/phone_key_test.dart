@@ -58,4 +58,21 @@ void main() {
       expect(phoneWire('1133334444'), '+551133334444');
     });
   });
+
+  group('formatPhone', () {
+    test('celular sai como se le em voz alta', () {
+      expect(formatPhone('+5511996402210'), '(11) 99640-2210');
+      expect(formatPhone('11996402210'), '(11) 99640-2210');
+    });
+
+    test('fixo de oito digitos tambem', () {
+      expect(formatPhone('+551133334444'), '(11) 3333-4444');
+    });
+
+    test('o que nao e telefone daqui sai como veio', () {
+      expect(formatPhone(''), '');
+      expect(formatPhone('123'), '123');
+      expect(formatPhone('+14155552671'), '+14155552671');
+    });
+  });
 }

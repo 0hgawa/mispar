@@ -80,11 +80,108 @@ class AgendaSync {
 
     try {
       await pull();
+      await _baixarApagados();
       await push();
+      await _subirApagados();
     } finally {
       _correndo = false;
     }
   }
+
+  /// Apaga aqui o que foi apagado la.
+  ///
+  /// Pelo livro dos apagados, e nunca por ausencia: o celular so guarda
+  /// noventa dias de agenda, entao "o servidor tem e eu nao" quase sempre quer
+  /// dizer "e mais velho que a minha janela".
+  Future<void> _baixarApagados() async {
+    try {
+      final marca = await _marca();
+      final apagados = await _api.fetchDeletions(marca);
+      if (apagados.isEmpty) return;
+
+      await _database.transaction(() async {
+        for (final lapide in apagados) {
+          await _apagarLocal(lapide.table, lapide.id);
+        }
+      });
+
+      // A marca e o carimbo da ultima lapide processada. Se a proxima passada
+      // falhar no meio, ela recomeca daqui e nao perde nada.
+      final ultima = apagados
+          .map((l) => l.at)
+          .reduce((a, b) => a.isAfter(b) ? a : b);
+      await _guardarMarca(ultima);
+    } on Object catch (error) {
+      debugPrint('descida de apagados falhou: $error');
+    }
+  }
+
+  /// Manda para o servidor o que foi apagado aqui, e so entao risca a lapide.
+  ///
+  /// A ordem importa: riscar antes de o servidor confirmar perderia a noticia
+  /// numa queda de rede, e o cliente apagado voltaria na proxima descida.
+  Future<void> _subirApagados() async {
+    try {
+      final lapides = await _database.select(_database.deletedRows).get();
+      if (lapides.isEmpty) return;
+
+      final porTabela = <String, List<String>>{};
+      for (final lapide in lapides) {
+        (porTabela[lapide.sourceTable] ??= []).add(lapide.rowId);
+      }
+
+      for (final entrada in porTabela.entries) {
+        await _api.deleteRows(entrada.key, entrada.value);
+      }
+
+      await _database.delete(_database.deletedRows).go();
+    } on Object catch (error) {
+      debugPrint('subida de apagados falhou: $error');
+    }
+  }
+
+  /// Apaga a linha sem deixar lapide: ela ja veio de uma.
+  ///
+  /// Sem isto o aparelho anotaria a propria exclusao e a devolveria ao
+  /// servidor na passada seguinte — ruido de ida e volta para sempre.
+  Future<void> _apagarLocal(String tabela, String id) async {
+    await customStatement('drop trigger if exists ${tabela}_tombstone');
+    try {
+      await customStatement('delete from $tabela where id = ?', [id]);
+    } finally {
+      await _tombstoneTrigger(tabela);
+    }
+  }
+
+  Future<DateTime?> _marca() async {
+    final linha = await (_database.select(
+      _database.syncState,
+    )..where((s) => s.id.equals(1))).getSingleOrNull();
+    return linha?.lastPulledAt;
+  }
+
+  Future<void> _guardarMarca(DateTime quando) async {
+    await _database
+        .into(_database.syncState)
+        .insertOnConflictUpdate(
+          SyncStateCompanion.insert(
+            id: const Value(1),
+            lastPulledAt: Value(quando),
+          ),
+        );
+  }
+
+  Future<void> customStatement(String sql, [List<Object?>? args]) =>
+      _database.customStatement(sql, args);
+
+  Future<void> _tombstoneTrigger(String tabela) => customStatement('''
+    create trigger if not exists ${tabela}_tombstone
+    after delete on $tabela
+    begin
+      insert or replace into deleted_rows (table_name, row_id, deleted_at)
+      values ('$tabela', old.id, strftime('%s', 'now'));
+    end;
+  ''');
 
   /// Manda o banco do aparelho para o servidor.
   ///
@@ -203,6 +300,10 @@ class AgendaSync {
     }
   }
 
+  /// Dois jeitos de escrever o mesmo telefone.
+  static bool _mesmoNumero(String? aqui, String la) =>
+      aqui != null && aqui.isNotEmpty && phoneKey(aqui) == phoneKey(la);
+
   /// Minutos desde a meia-noite viram "HH:MM", que e `time` no Postgres.
   static String? _hora(int? minutes) {
     if (minutes == null) return null;
@@ -220,6 +321,17 @@ class AgendaSync {
         _api.fetchClients(),
         _api.fetchAppointments(since),
       ]);
+
+      // Como cada telefone esta escrito aqui, para a descida nao reescrever.
+      //
+      // A subida manda em formato internacional, porque e assim que o robo
+      // acha a pessoa no WhatsApp. Se a descida trouxesse isso de volta, o
+      // "11 99640-2210" que o Marcos digitou virava "+5511996402210" na tela —
+      // o mesmo numero, escrito de um jeito que ele nao escolheu.
+      final comoEstaAqui = {
+        for (final linha in await _database.select(_database.clients).get())
+          linha.id: linha.phone,
+      };
 
       await _database.transaction(() async {
         await _database.batch((batch) {
@@ -239,7 +351,11 @@ class AgendaSync {
                 ClientsCompanion.insert(
                   id: client.id,
                   name: client.name,
-                  phone: client.phone,
+                  // O mesmo numero mantem a escrita daqui; numero diferente
+                  // veio do robo e vale.
+                  phone: _mesmoNumero(comoEstaAqui[client.id], client.phone)
+                      ? comoEstaAqui[client.id]!
+                      : client.phone,
                   note: Value(client.note),
                   createdAt: client.createdAt,
                 ),

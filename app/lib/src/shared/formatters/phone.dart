@@ -32,3 +32,32 @@ String? phoneWire(String phone) {
   if (digits.length < 10 || digits.length > 13) return null;
   return '+55$digits';
 }
+
+/// O telefone escrito do jeito que se lê em voz alta: `(11) 99640-2210`.
+///
+/// A sincronia guarda o número na forma internacional, que é a que o robô
+/// precisa para achar a pessoa no WhatsApp — e que ninguém quer ler na tela.
+/// Aqui ele volta ao formato de quem mora no Brasil.
+///
+/// O que não for um telefone brasileiro sai como veio. Um número estrangeiro,
+/// ou um campo que alguém usou para outra coisa, não pode virar parênteses
+/// tortos só porque a função tentou.
+String formatPhone(String phone) {
+  // Numero de fora sai intacto. Sem esta linha, `+1 415 555 2671` tem onze
+  // digitos como um celular daqui e virava `(14) 15555-2671` — um telefone
+  // que nao existe, com a cara de que existe.
+  final texto = phone.trim();
+  if (texto.startsWith('+') && !texto.startsWith('+55')) return phone;
+
+  final digits = phoneKey(phone);
+
+  return switch (digits.length) {
+    11 =>
+      '(${digits.substring(0, 2)}) ${digits.substring(2, 7)}'
+          '-${digits.substring(7)}',
+    10 =>
+      '(${digits.substring(0, 2)}) ${digits.substring(2, 6)}'
+          '-${digits.substring(6)}',
+    _ => phone,
+  };
+}

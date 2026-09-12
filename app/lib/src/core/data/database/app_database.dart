@@ -15,13 +15,46 @@ part 'app_database.g.dart';
     TimeBlocks,
     ExpenseCategories,
     Expenses,
+    DeletedRows,
+    SyncState,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   new() : super(driftDatabase(name: 'mispar'));
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
+
+  /// Os gatilhos que anotam quem foi apagado.
+  ///
+  /// SQL cru porque o Drift não modela gatilho, e gatilho é justamente o que
+  /// resolve isto: o banco anota sozinho, e nenhuma tela precisa lembrar. Seis
+  /// repositórios apagam linha neste app; pedir que os seis anotem é escolher
+  /// qual deles vai esquecer.
+  ///
+  /// `insert or replace`: linha recriada e apagada de novo vale pela data mais
+  /// nova, que é a notícia que o servidor ainda não tem.
+  Future<void> _tombstoneTriggers() async {
+    const tabelas = [
+      'services',
+      'clients',
+      'time_blocks',
+      'appointments',
+      'expense_categories',
+      'expenses',
+    ];
+
+    for (final tabela in tabelas) {
+      await customStatement('''
+        create trigger if not exists ${tabela}_tombstone
+        after delete on $tabela
+        begin
+          insert or replace into deleted_rows (table_name, row_id, deleted_at)
+          values ('$tabela', old.id, strftime('%s', 'now'));
+        end;
+      ''');
+    }
+  }
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -83,12 +116,22 @@ class AppDatabase extends _$AppDatabase {
           'update appointments set walk_in = 1 where client_id is null',
         );
       }
+      // v18: o livro dos apagados, para a cópia na nuvem saber o que sumiu.
+      if (from < 18) {
+        await m.createTable(deletedRows);
+        await m.createTable(syncState);
+        await _tombstoneTriggers();
+      }
       // v17: o cadastro da barbearia — nome, endereço e o @ do Instagram.
       if (from < 17) {
         await m.addColumn(shopSettings, shopSettings.shopName);
         await m.addColumn(shopSettings, shopSettings.shopAddress);
         await m.addColumn(shopSettings, shopSettings.shopInstagram);
       }
+    },
+    onCreate: (m) async {
+      await m.createAll();
+      await _tombstoneTriggers();
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');

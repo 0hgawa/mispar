@@ -31,6 +31,7 @@ for (const file of [
   '0012_grants.sql',
   '0013_accepts_the_phone.sql',
   '0014_ids_de_texto.sql',
+  '0015_a_lapide_se_escreve_sozinha.sql',
 ]) {
   try {
     await db.exec(readFileSync(DIR + file, 'utf8'));
@@ -568,6 +569,28 @@ try {
     values ((select id from clients where name = 'Cliente sem numero'), 'corte', '${quando}', 30, 4000, 'confirmed')`);
 } catch { doisNaCadeira = true; }
 check('duas pessoas ainda nao sentam na mesma cadeira', doisNaCadeira);
+
+// ---- 16. o barbeiro apaga, e a lapide se escreve sozinha ----
+//
+// O livro e so-leitura para quem usa o app. Sem `security definer` no gatilho,
+// apagar um cliente batia em "permission denied" e a exclusao nunca chegava
+// ao servidor — o cliente voltava na descida seguinte.
+
+await db.exec(`insert into clients (id, name) values ('apagar-me', 'Apagar Me')`);
+
+const apagou = await comoPapel('authenticated',
+  "delete from clients where id = 'apagar-me' returning id");
+check('o barbeiro autenticado apaga um cliente',
+  apagou.erro === null && apagou.linhas.length === 1, apagou.erro ?? 'ok');
+
+const lapide = await one(
+  "select count(*)::int n from deleted_rows where row_id = 'apagar-me'");
+check('e a lapide foi escrita pelo gatilho', lapide.n === 1, String(lapide.n));
+
+// E continua sem poder riscar o que ja foi anotado.
+const risca = await comoPapel('authenticated',
+  "delete from deleted_rows where row_id = 'apagar-me'");
+check('mas nao pode riscar a lapide', risca.erro !== null, risca.erro ?? 'RISCOU');
 
 console.log(failed === 0 ? '\nTUDO PASSOU' : `\n${failed} FALHA(S)`);
 process.exit(failed === 0 ? 0 : 1);

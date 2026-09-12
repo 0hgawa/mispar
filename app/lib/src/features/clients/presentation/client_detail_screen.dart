@@ -13,6 +13,7 @@ import 'package:mispar/src/features/clients/presentation/widgets/note_editor.dar
 import 'package:mispar/src/features/settings/domain/drifted_rule.dart';
 import 'package:mispar/src/shared/formatters/day_time.dart';
 import 'package:mispar/src/shared/formatters/money.dart';
+import 'package:mispar/src/shared/formatters/phone.dart';
 import 'package:mispar/src/shared/whatsapp.dart';
 import 'package:mispar/src/shared/widgets/app_card.dart';
 import 'package:mispar/src/shared/widgets/app_snack.dart';
@@ -55,7 +56,7 @@ class _Body extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         PageBar(title: client.name),
-        SliverToBoxAdapter(child: PageSubtitle(client.phone)),
+        SliverToBoxAdapter(child: PageSubtitle(formatPhone(client.phone))),
         SliverPadding(
           padding: const EdgeInsets.only(bottom: Dimens.gapLarge * 2),
           sliver: SliverList.list(

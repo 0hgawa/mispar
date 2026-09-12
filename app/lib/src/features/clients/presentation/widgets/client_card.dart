@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mispar/src/features/clients/domain/client_summary.dart';
 import 'package:mispar/src/features/clients/presentation/widgets/client_row.dart';
+import 'package:mispar/src/shared/formatters/phone.dart';
 
 class ClientCard extends StatelessWidget {
   const new({required this.summary, required this.onTap, super.key});
@@ -20,7 +21,7 @@ class ClientCard extends StatelessWidget {
       // o olho nao consegue confiar num lugar que muda de assunto. O telefone
       // e o unico campo que todo mundo tem, e e ele que separa dois "Joao" na
       // lista. A anotacao fica na ficha, que e o que se abre antes de atender.
-      detail: client.phone,
+      detail: formatPhone(client.phone),
       detailLines: 1,
       onTap: onTap,
     );
