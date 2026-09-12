@@ -48,7 +48,10 @@ class RemoteClient {
   factory fromJson(Map<String, dynamic> json) => RemoteClient(
     id: json['id'] as String,
     name: json['name'] as String,
-    phone: json['phone'] as String,
+    // Vazio, e nao nulo: no aparelho a coluna nao aceita nulo, e '' e como
+    // a tela ja mostra "sem telefone". O servidor guarda nulo porque la o
+    // telefone e unico e dois vazios colidiriam.
+    phone: json['phone'] as String? ?? '',
     note: json['note'] as String?,
     createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
   );
@@ -112,11 +115,18 @@ class AgendaApi {
     return rows.map(RemoteAppointment.fromJson).toList(growable: false);
   }
 
-  Future<void> updateStatus(String id, AppointmentStatus status) async {
-    await _client
-        .from('appointments')
-        .update({'status': status.wireName})
-        .eq('id', id);
+  /// Manda as linhas para o servidor, criando ou sobrescrevendo pelo id.
+  ///
+  /// Espelho, e nao fila de eventos. O banco inteiro da barbearia cabe em
+  /// dezenas de quilobytes: subir tudo a cada passada custa menos que manter
+  /// uma fila de mudancas correta, e nao tem o defeito dela — fila que perde
+  /// um evento fica errada para sempre, e ninguem descobre.
+  ///
+  /// `upsert` e nao `insert`: a passada e idempotente, entao rede que cai no
+  /// meio so faz repetir, nunca duplicar.
+  Future<void> pushRows(String table, List<Map<String, dynamic>> rows) async {
+    if (rows.isEmpty) return;
+    await _client.from(table).upsert(rows);
   }
 
   /// Avisa a cada mudanca na tabela de agendamentos.

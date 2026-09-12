@@ -29,6 +29,8 @@ for (const file of [
   '0010_full_copy.sql',
   '0011_incremental_sync.sql',
   '0012_grants.sql',
+  '0013_accepts_the_phone.sql',
+  '0014_ids_de_texto.sql',
 ]) {
   try {
     await db.exec(readFileSync(DIR + file, 'utf8'));
@@ -89,14 +91,14 @@ try {
 } catch (e) { check('horario colado no anterior e aceito', false, e.message.slice(0, 60)); }
 
 // ---- 8. cancelar libera o horario ----
-await db.exec(`select cancel_appointment('+5511988124471', '${booked.id}'::uuid)`);
+await db.exec(`select cancel_appointment('+5511988124471', '${booked.id}'::text)`);
 try {
   await db.exec(`select book_appointment('+5511955555555', 'Substituto', 'corte', '${at(14)}'::timestamptz)`);
   check('cancelar libera o horario para outro', true);
 } catch (e) { check('cancelar libera o horario para outro', false, e.message.slice(0, 60)); }
 
 // ---- 9. ninguem cancela o corte do vizinho ----
-const stranger = await all(`select cancel_appointment('+5511900000000', '${booked.id}'::uuid) ok`);
+const stranger = await all(`select cancel_appointment('+5511900000000', '${booked.id}'::text) ok`);
 check('telefone errado nao cancela', stranger.length === 0 || !stranger[0].ok);
 
 // ---- 10. disponibilidade ----
@@ -356,9 +358,9 @@ try { await db.exec(`update shop_settings set reminder_hours_before = 100`); } c
 check('janela absurda e recusada', horaAbsurda);
 
 // O id do horario viaja no botao da mensagem, entao o telefone tem que bater.
-const alheio = await one(`select confirm_appointment('+5511900000000', '${perto.id}'::uuid) ok`);
+const alheio = await one(`select confirm_appointment('+5511900000000', '${perto.id}'::text) ok`);
 check('ninguem confirma o horario de outro', alheio.ok === null, String(alheio.ok));
-const dono = await one(`select confirm_appointment('+5511922222222', '${perto.id}'::uuid) ok`);
+const dono = await one(`select confirm_appointment('+5511922222222', '${perto.id}'::text) ok`);
 check('o dono do numero confirma', dono.ok === true, String(dono.ok));
 const marca = await one(`select confirmed_at from appointments where id = '${perto.id}'`);
 check('a confirmacao fica gravada', marca.confirmed_at !== null);
@@ -520,6 +522,52 @@ const mexeLapide = await comoPapel('authenticated',
   "delete from deleted_rows where row_id = 'teste'");
 check('nem o barbeiro reescreve o livro dos apagados', mexeLapide.erro !== null,
   mexeLapide.erro ?? 'APAGOU');
+
+// ---- 15. o servidor aceita o que o aparelho grava ----
+
+// A tela de marcar pede telefone "opcional", e o barbeiro pula.
+const semFone = await db.query(
+  "insert into clients (name) values ('Cliente sem numero') returning id");
+check('cliente sem telefone sobe', semFone.rows.length === 1);
+
+// Dois sem numero nao podem colidir no indice unico.
+let doisSemFone = true;
+try {
+  await db.exec("insert into clients (name) values ('Outro sem numero')");
+} catch (e) {
+  doisSemFone = false;
+  console.log('   ' + e.message);
+}
+check('dois clientes sem telefone convivem', doisSemFone);
+
+// Quem tem numero continua obrigado ao formato: telefone torto quebra o robo.
+let torto = false;
+try { await db.exec("insert into clients (phone, name) values ('11988124471', 'Torto')"); }
+catch { torto = true; }
+check('telefone fora do formato continua recusado', torto);
+
+// Balcao nao disputa a cadeira: e anotacao do que ja aconteceu.
+// Uma terca-feira bem longe de tudo que os testes acima marcaram.
+const quando = '2027-04-20 16:00-03';
+await db.exec(`insert into appointments (client_id, service_id, starts_at, duration_minutes, price_cents, status)
+  values ((select id from clients where name = 'Rafael Lima'), 'corte', '${quando}', 30, 4000, 'confirmed')`);
+let balcaoEntra = true;
+try {
+  await db.exec(`insert into appointments (service_id, starts_at, duration_minutes, price_cents, status, walk_in)
+    values ('pomada', '${quando}', 5, 3000, 'done', true)`);
+} catch (e) {
+  balcaoEntra = false;
+  console.log('   ' + e.message);
+}
+check('venda de balcao entra na mesma hora de um horario marcado', balcaoEntra);
+
+// E a agenda continua travada para quem reserva de verdade.
+let doisNaCadeira = false;
+try {
+  await db.exec(`insert into appointments (client_id, service_id, starts_at, duration_minutes, price_cents, status)
+    values ((select id from clients where name = 'Cliente sem numero'), 'corte', '${quando}', 30, 4000, 'confirmed')`);
+} catch { doisNaCadeira = true; }
+check('duas pessoas ainda nao sentam na mesma cadeira', doisNaCadeira);
 
 console.log(failed === 0 ? '\nTUDO PASSOU' : `\n${failed} FALHA(S)`);
 process.exit(failed === 0 ? 0 : 1);

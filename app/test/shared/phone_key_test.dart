@@ -36,4 +36,26 @@ void main() {
       expect(phoneKey(''), '');
     });
   });
+
+  group('phoneWire', () {
+    test('o que foi digitado no balcao sobe em formato internacional', () {
+      expect(phoneWire('11 99640-2210'), '+5511996402210');
+      expect(phoneWire('(11) 9 9640-2210'), '+5511996402210');
+      expect(phoneWire('+55 11 99640-2210'), '+5511996402210');
+    });
+
+    test('sem numero nao vira texto vazio, vira nulo', () {
+      expect(phoneWire(''), isNull);
+      expect(phoneWire('   '), isNull);
+    });
+
+    test('numero curto demais nao sobe, para nao derrubar a lista toda', () {
+      expect(phoneWire('123'), isNull);
+      expect(phoneWire('99640221'), isNull);
+    });
+
+    test('fixo com DDD sobe', () {
+      expect(phoneWire('1133334444'), '+551133334444');
+    });
+  });
 }

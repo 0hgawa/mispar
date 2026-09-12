@@ -14,3 +14,21 @@ String phoneKey(String phone) {
   }
   return digits;
 }
+
+/// O telefone no formato internacional, que é como o servidor guarda.
+///
+/// `11 99640-2210` vira `+5511996402210`. É o formato que o WhatsApp usa para
+/// achar a pessoa, e por isso é o que o robô precisa encontrar no Postgres —
+/// digitado de qualquer jeito no balcão, sobe sempre igual.
+///
+/// Nulo quando não há número. Vazio não serve: no servidor o telefone é único,
+/// e dois textos vazios colidiriam; nulo é como se diz "ninguém anotou".
+///
+/// Nulo também quando o que foi digitado não dá um número de verdade — dez
+/// dígitos são o mínimo de um celular brasileiro com DDD. Subir "123" faria o
+/// servidor recusar a linha, e com ela a lista inteira de clientes.
+String? phoneWire(String phone) {
+  final digits = phoneKey(phone);
+  if (digits.length < 10 || digits.length > 13) return null;
+  return '+55$digits';
+}

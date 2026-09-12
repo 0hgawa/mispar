@@ -5,13 +5,24 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mispar/src/core/data/database/app_database.dart';
 import 'package:mispar/src/core/data/remote/agenda_api.dart';
+import 'package:mispar/src/shared/formatters/phone.dart';
 
-/// Traz o Postgres para dentro do SQLite.
+/// A ponte entre o SQLite do aparelho e o Postgres.
 ///
 /// A tela nunca fala com a rede: ela le o banco local, que o Drift reemite a
-/// cada escrita. Este servico so empurra o que vem de fora para dentro — assim
-/// a agenda abre igual com ou sem sinal, e o horario que o robo marcar aparece
-/// sozinho.
+/// cada escrita. Assim a agenda abre igual com ou sem sinal, e o horario que o
+/// robo marcar aparece sozinho.
+///
+/// **Desce e sobe, nessa ordem.** Primeiro o que o robo escreveu chega no
+/// aparelho; depois o aparelho manda tudo de volta. A ordem importa: ao
+/// contrario, uma passada sobreporia com dado velho o horario que o robo
+/// acabou de marcar.
+///
+/// **A subida e espelho, e nao fila.** Manda o banco inteiro a cada passada,
+/// criando ou sobrescrevendo pelo id. Parece desperdicio e nao e: a barbearia
+/// inteira cabe em dezenas de quilobytes, e manter uma fila de mudancas
+/// correta custa mais — fila que perde um evento fica errada para sempre, e
+/// ninguem descobre ate precisar do backup.
 class AgendaSync {
   new({required this._api, required this._database});
 
@@ -23,18 +34,181 @@ class AgendaSync {
 
   StreamSubscription<void>? _changes;
 
-  /// Puxa tudo uma vez e passa a ouvir as mudancas.
+  Timer? _relogio;
+
+  /// De quanto em quanto tempo a copia sobe.
+  ///
+  /// Relogio, e nao gatilho por escrita. O gatilho parecia mais esperto e se
+  /// mordia: a descida escreve no banco local, a escrita dispara o gatilho, o
+  /// gatilho pede outra passada — e o aparelho ficava subindo o mesmo banco a
+  /// cada dois segundos, sem nada ter mudado.
+  ///
+  /// Um minuto e de sobra para o que isto e: uma copia de seguranca. Perder um
+  /// minuto de agenda num celular que caiu na privada nao muda a vida de
+  /// ninguem; queimar bateria o dia inteiro, muda.
+  static const _intervalo = Duration(minutes: 1);
+
+  /// Uma passada por vez. Duas ao mesmo tempo mandariam o mesmo banco duas
+  /// vezes, e a segunda so faria o servidor trabalhar a toa.
+  bool _correndo = false;
+
+  /// Uma passada agora, e depois a cada mudanca dos dois lados.
   Future<void> start() async {
-    await pull();
+    await sync();
+
     _changes = _api.watchChanges().listen(
-      (_) => unawaited(pull()),
+      (_) => unawaited(sync()),
       onError: (Object error) => debugPrint('sync interrompido: $error'),
     );
+
+    // E de minuto em minuto, para o que o Marcos escreveu no balcao chegar
+    // no servidor sem ele fazer nada.
+    _relogio = Timer.periodic(_intervalo, (_) => unawaited(sync()));
   }
 
   Future<void> dispose() async {
+    _relogio?.cancel();
+    _relogio = null;
     await _changes?.cancel();
     _changes = null;
+  }
+
+  /// Desce o que veio de fora e sobe o que e daqui.
+  Future<void> sync() async {
+    if (_correndo) return;
+    _correndo = true;
+
+    try {
+      await pull();
+      await push();
+    } finally {
+      _correndo = false;
+    }
+  }
+
+  /// Manda o banco do aparelho para o servidor.
+  ///
+  /// Ordem de dependencia: servico e tipo de despesa antes do que aponta para
+  /// eles, cliente antes do horario. O Postgres tem chave estrangeira de
+  /// verdade, e fora de ordem ele recusa.
+  ///
+  /// Falha de rede nao derruba nada — a proxima passada manda tudo de novo,
+  /// porque e espelho e nao fila.
+  Future<void> push() async {
+    try {
+      await _api.pushRows('services', [
+        for (final row in await _database.select(_database.services).get())
+          {
+            'id': row.id,
+            'name': row.name,
+            'duration_minutes': row.durationMinutes,
+            'price_cents': row.priceCents,
+            'requires_deposit': row.requiresDeposit,
+            'active': row.active,
+            'kind': row.kind,
+          },
+      ]);
+
+      await _api.pushRows('expense_categories', [
+        for (final row
+            in await _database.select(_database.expenseCategories).get())
+          {'id': row.id, 'name': row.name, 'active': row.active},
+      ]);
+
+      await _api.pushRows('clients', [
+        for (final row in await _database.select(_database.clients).get())
+          {
+            'id': row.id,
+            'name': row.name,
+            // No formato internacional, que e como o robo acha a pessoa no
+            // WhatsApp. Nulo quando nao ha numero ou o que foi digitado nao da
+            // um telefone — o servidor recusaria a linha, e com ela a lista
+            // inteira de clientes.
+            'phone': phoneWire(row.phone),
+            'note': row.note,
+            'created_at': row.createdAt.toUtc().toIso8601String(),
+            'active': row.active,
+          },
+      ]);
+
+      await _api.pushRows('shop_hours', [
+        for (final row in await _database.select(_database.shopHours).get())
+          {
+            'weekday': row.weekday,
+            'is_open': row.isOpen,
+            'opens_at': _hora(row.opensMinutes),
+            'closes_at': _hora(row.closesMinutes),
+            'lunch_start': _hora(row.lunchStartMinutes),
+            'lunch_end': _hora(row.lunchEndMinutes),
+          },
+      ]);
+
+      await _api.pushRows('time_blocks', [
+        for (final row in await _database.select(_database.timeBlocks).get())
+          {
+            'id': row.id,
+            'starts_at': row.startsAt.toUtc().toIso8601String(),
+            'ends_at': row.endsAt.toUtc().toIso8601String(),
+            'reason': row.reason,
+          },
+      ]);
+
+      await _api.pushRows('appointments', [
+        for (final row in await _database.select(_database.appointments).get())
+          {
+            'id': row.id,
+            'client_id': row.clientId,
+            'service_id': row.serviceId,
+            'starts_at': row.startsAt.toUtc().toIso8601String(),
+            'duration_minutes': row.durationMinutes,
+            'price_cents': row.priceCents,
+            'status': row.status,
+            'payment_method': row.paymentMethod,
+            'walk_in': row.walkIn,
+          },
+      ]);
+
+      // Os ajustes sao uma linha so, travada no id 1 dos dois lados.
+      await _api.pushRows('shop_settings', [
+        for (final row in await _database.select(_database.shopSettings).get())
+          {
+            'id': row.id,
+            'slot_step_minutes': row.slotStepMinutes,
+            'reminder_enabled': row.reminderEnabled,
+            'reminder_hours_before': row.reminderHoursBefore,
+            'drifted_enabled': row.driftedEnabled,
+            'drifted_days': row.driftedDays,
+            'accepted_payments': row.acceptedPayments,
+            'shop_name': row.shopName,
+            'shop_address': row.shopAddress,
+            'shop_instagram': row.shopInstagram,
+          },
+      ]);
+
+      await _api.pushRows('expenses', [
+        for (final row in await _database.select(_database.expenses).get())
+          {
+            'id': row.id,
+            'spent_at': row.spentAt.toUtc().toIso8601String(),
+            'category': row.categoryId,
+            'cents': row.cents,
+            'note': row.note,
+            'repeats_monthly': row.repeatsMonthly,
+            'series_id': row.seriesId,
+          },
+      ]);
+    } on Object catch (error) {
+      // Sem rede, ou linha que o servidor recusou. Fica para a proxima.
+      debugPrint('subida falhou: $error');
+    }
+  }
+
+  /// Minutos desde a meia-noite viram "HH:MM", que e `time` no Postgres.
+  static String? _hora(int? minutes) {
+    if (minutes == null) return null;
+    final h = (minutes ~/ 60).toString().padLeft(2, '0');
+    final m = (minutes % 60).toString().padLeft(2, '0');
+    return '$h:$m';
   }
 
   /// Uma passada completa. Falha de rede nao derruba nada: fica o que ja tinha.
