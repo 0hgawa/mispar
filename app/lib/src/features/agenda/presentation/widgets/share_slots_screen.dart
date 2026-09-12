@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:marcos_barber/src/core/theme/app_colors.dart';
 import 'package:marcos_barber/src/features/agenda/data/shop_settings_repository.dart';
 import 'package:marcos_barber/src/features/agenda/domain/day_schedule.dart';
+import 'package:marcos_barber/src/features/agenda/domain/free_slots_message.dart';
 import 'package:marcos_barber/src/features/agenda/domain/shop_hours.dart';
 import 'package:marcos_barber/src/features/agenda/presentation/day_view_model.dart';
 import 'package:marcos_barber/src/features/booking/presentation/new_appointment_view_model.dart';
@@ -24,6 +25,12 @@ import 'package:share_plus/share_plus.dart';
 /// Seis: uma lista maior deixa de ser convite e vira grade de agenda, e uma
 /// agenda vazia divulgada não convida ninguém.
 const _limit = 6;
+
+/// O fundo do cartaz.
+///
+/// Fora da tela: o arquivo exportado é achatado sobre ele, e o fundo do PNG
+/// tem que ser o mesmo que o olho viu na prévia.
+const Color _ground = AppColors.lightFill;
 
 /// Os horários livres do dia escolhido, prontos para divulgar.
 ///
@@ -108,8 +115,14 @@ class _ShareSlotsScreenState extends State<ShareSlotsScreen> {
         child: Padding(
           padding: const EdgeInsets.all(Dimens.screenGutter),
           child: AspectRatio(
-            // Retrato de Stories. Postado fora dele, continua cabendo.
-            aspectRatio: 9 / 16,
+            // 4:5, e não o 9:16 do Stories.
+            //
+            // O WhatsApp corta pelo meio a imagem alta demais na bolha da
+            // conversa: em 9:16 o primeiro e o último horário sumiam, e só
+            // apareciam abrindo a imagem. 4:5 é o retrato mais alto que passa
+            // inteiro na conversa, no status e no Stories — lá ele não enche a
+            // tela toda, e é o preço certo a pagar.
+            aspectRatio: 4 / 5,
             child: RepaintBoundary(
               key: _poster,
               child: _Poster(day: widget.day, hours: widget.hours),
@@ -118,15 +131,74 @@ class _ShareSlotsScreenState extends State<ShareSlotsScreen> {
         ),
       ),
       bottomNavigationBar: BottomAction(
-        child: FilledButton(
-          onPressed: _sharing ? null : () => unawaited(_share()),
-          child: _sharing
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Compartilhar'),
+        // Dois destinos, dois botões. O Stories só aceita imagem; a conversa
+        // de um para um pede texto, que o cliente copia e responde citando.
+        // Um botão só obrigaria a escolher errado metade das vezes.
+        //
+        // Empilhados, e não lado a lado: em dois botões numa linha só, "Mandar
+        // imagem" quebrava em duas linhas. A imagem manda porque é ela que
+        // está desenhada logo acima.
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FilledButton(
+              onPressed: _sharing ? null : () => unawaited(_share()),
+              child: _sharing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Mandar imagem'),
+            ),
+            TextButton(
+              onPressed: _sharing ? null : _shareText,
+              child: const Text('Mandar só o texto'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// O mesmo desenho, sem um pingo de transparência.
+  ///
+  /// A borda do recorte cai em pixel quebrado, e a última coluna sai meio
+  /// transparente. WhatsApp e Instagram pintam transparência de preto — era
+  /// dali que vinha o fio escuro na lateral do cartaz. Desenhar por cima de um
+  /// fundo cheio resolve de uma vez, sem depender de a conta dar redonda.
+  Future<ui.Image> _onSolidGround(ui.Image shot) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final size = Rect.fromLTWH(
+      0,
+      0,
+      shot.width.toDouble(),
+      shot.height.toDouble(),
+    );
+
+    canvas
+      ..drawRect(size, Paint()..color = _ground)
+      ..drawImage(shot, Offset.zero, Paint());
+
+    final picture = recorder.endRecording();
+    final flat = await picture.toImage(shot.width, shot.height);
+    picture.dispose();
+    return flat;
+  }
+
+  /// Manda a frase pela folha do Android: de lá ele escolhe a conversa, e o
+  /// "Copiar" do topo ainda atende quem vai colar em outro lugar.
+  void _shareText() {
+    unawaited(
+      SharePlus.instance.share(
+        ShareParams(
+          text: freeSlotsMessage(
+            day: widget.day,
+            hours: widget.hours,
+            now: DateTime.now(),
+          ),
         ),
       ),
     );
@@ -139,7 +211,9 @@ class _ShareSlotsScreenState extends State<ShareSlotsScreen> {
       final boundary =
           _poster.currentContext!.findRenderObject()! as RenderRepaintBoundary;
       // 3x: o cartão na tela tem uns 300 de largura, e o Stories quer 1080.
-      final image = await boundary.toImage(pixelRatio: 3);
+      final shot = await boundary.toImage(pixelRatio: 3);
+      final image = await _onSolidGround(shot);
+      shot.dispose();
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
       image.dispose();
 
@@ -165,6 +239,16 @@ class _ShareSlotsScreenState extends State<ShareSlotsScreen> {
 ///
 /// Sem nome nem logo da barbearia: ele sai na conta dela, e a conta já diz de
 /// quem é. Repetir ali seria assinar a própria carta duas vezes.
+///
+/// **A hora é o desenho.** Nada de ícone, fio ou moldura: no meio das fotos
+/// do Stories, o que para o dedo é uma coisa grande e mais nada. Foi assim
+/// que o vazio sumiu — não preenchendo o buraco com enfeite, mas deixando o
+/// conteúdo ocupar o cartão.
+///
+/// **Cores fixas, e não as do tema.** Isto vira um arquivo que sai do
+/// aparelho: a imagem postada não pode depender de o celular estar no modo
+/// escuro naquela hora, senão o mesmo botão gera cartaz claro hoje e escuro
+/// amanhã.
 class _Poster extends StatelessWidget {
   const new({required this.day, required this.hours});
 
@@ -174,61 +258,77 @@ class _Poster extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     final now = DateTime.now();
     final isToday =
         day.year == now.year && day.month == now.month && day.day == now.day;
+    final label = '${formatShortWeekday(day)} ${day.day}'.toUpperCase();
 
     // Invertido: preto, com as horas em branco.
     //
     // Claro, o cartão sumia — ficava da cor da tela, e não dava para ver o que
     // ia ser postado. E no Stories, no meio de foto, é o preto que para o
     // dedo. É o mesmo preto do botão de marcar: a voz do app.
-    final ink = colors.onSurface;
-    final paper = colors.surface;
+    const ink = AppColors.lightInk;
+    const soft = AppColors.lightInkSoft;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: ink,
-        borderRadius: BorderRadius.circular(Dimens.cardRadius * 2),
-      ),
+    // Canto reto, e não arredondado como os cartões do app.
+    //
+    // O que sai daqui é um arquivo. Arredondar deixa os quatro cantos
+    // transparentes no PNG, e WhatsApp e Instagram pintam transparência de
+    // preto — o cartaz chegava com quatro cunhas pretas em volta. Reto, a
+    // prévia também passa a ser exatamente o que vai ser postado.
+    return ColoredBox(
+      color: _ground,
       child: Padding(
         padding: const EdgeInsets.all(28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isToday ? 'HOJE' : formatShortWeekday(day).toUpperCase(),
+              isToday ? 'HOJE · $label' : label,
               style: theme.textTheme.labelSmall?.copyWith(
-                color: paper.withValues(alpha: 0.6),
+                color: soft,
                 letterSpacing: 2,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              hours.length == 1 ? 'Tenho um horário' : 'Tenho horário',
-              style: theme.textTheme.headlineMedium?.copyWith(color: paper),
-            ),
-            // Entre o título e a hora, e entre a hora e o convite, o mesmo
-            // vazio: a hora fica no meio do cartão, que é onde o olho cai.
-            // Empilhada no topo, sobrava um buraco embaixo.
-            const Spacer(),
-            for (final hour in hours) ...[
-              Text(
-                formatHour(hour),
-                style: theme.textTheme.displayMedium?.copyWith(
-                  color: paper,
-                  fontFeatures: const [FontFeature.tabularFigures()],
+            // Um respiro em cima e outro embaixo: coladas na etiqueta e na
+            // frase, as horas pareciam espremidas em vez de grandes.
+            const SizedBox(height: Dimens.gapMedium),
+            Expanded(
+              // As horas crescem até encostar nas bordas do que sobrou.
+              //
+              // Escala geométrica, e não um tamanho novo: o estilo continua
+              // sendo o do tema, e um horário só sai enorme enquanto seis
+              // saem grandes. Era isto que faltava — no tamanho de tela, seis
+              // numeros pequenos num cartao de retrato deixam metade dele
+              // vazia, e vazio num cartaz parece erro.
+              child: FittedBox(
+                alignment: Alignment.centerLeft,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final hour in hours)
+                      Text(
+                        formatHour(hour),
+                        style: theme.textTheme.displayLarge?.copyWith(
+                          color: ink,
+                          height: 1.1,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 2),
-            ],
-            const Spacer(),
+            ),
+            const SizedBox(height: Dimens.gapMedium),
+            Text(
+              hours.length == 1 ? 'Tenho um horário.' : 'Tenho horário.',
+              style: theme.textTheme.bodyLarge?.copyWith(color: ink),
+            ),
             Text(
               'Chama no WhatsApp',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: paper.withValues(alpha: 0.6),
-              ),
+              style: theme.textTheme.bodyLarge?.copyWith(color: soft),
             ),
           ],
         ),
