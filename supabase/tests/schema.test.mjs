@@ -28,6 +28,7 @@ for (const file of [
   '0009_reminder.sql',
   '0010_full_copy.sql',
   '0011_incremental_sync.sql',
+  '0012_grants.sql',
 ]) {
   try {
     await db.exec(readFileSync(DIR + file, 'utf8'));
@@ -473,6 +474,52 @@ check('anonimo nao le o livro dos apagados', anonNoLivro === false);
 const idx = await one(
   "select count(*)::int n from pg_indexes where indexname = 'appointments_due_idx'");
 check('a fila de lembretes tem indice proprio', idx.n === 1, String(idx.n));
+
+// ---- 14. as duas portas: grant e politica ----
+//
+// No Postgres o acesso passa por grant **e** politica. O teste vale porque
+// ate a 0011 o projeto so funcionava com a caixinha "expose new tables"
+// ligada no painel — fora do git, e portanto fora do teste.
+
+const comoPapel = async (papel, sql) => {
+  await db.exec('set role ' + papel);
+  try {
+    return { linhas: (await db.query(sql)).rows, erro: null };
+  } catch (e) {
+    return { linhas: null, erro: e.message };
+  } finally {
+    await db.exec('reset role');
+  }
+};
+
+const barbeiro = await comoPapel('authenticated', 'select count(*)::int n from clients');
+check('o barbeiro autenticado le os clientes',
+  barbeiro.erro === null && barbeiro.linhas[0].n > 0, barbeiro.erro ?? 'ok');
+
+const escreve = await comoPapel('authenticated',
+  "update services set price_cents = 4700 where id = 'corte' returning id");
+check('o barbeiro autenticado escreve no catalogo',
+  escreve.erro === null && escreve.linhas.length === 1, escreve.erro ?? 'ok');
+
+// A chave publicavel do app e `anon` ate o login. Se ela enxergasse a base,
+// bastaria ler a chave dentro do APK para ter a agenda inteira.
+const semLogin = await comoPapel('anon', 'select count(*) from clients');
+check('sem login a chave publicavel nao ve cliente nenhum',
+  semLogin.erro !== null, semLogin.erro ?? 'LEU — vazando');
+
+const semLoginAgenda = await comoPapel('anon', 'select count(*) from appointments');
+check('sem login a chave publicavel nao ve a agenda',
+  semLoginAgenda.erro !== null, semLoginAgenda.erro ?? 'LEU — vazando');
+
+const semLoginAjuste = await comoPapel('anon', 'select count(*) from shop_settings');
+check('sem login a chave publicavel nao ve os ajustes',
+  semLoginAjuste.erro !== null, semLoginAjuste.erro ?? 'LEU — vazando');
+
+// Lapide se le, nao se reescreve: quem escreve nela e o gatilho.
+const mexeLapide = await comoPapel('authenticated',
+  "delete from deleted_rows where row_id = 'teste'");
+check('nem o barbeiro reescreve o livro dos apagados', mexeLapide.erro !== null,
+  mexeLapide.erro ?? 'APAGOU');
 
 console.log(failed === 0 ? '\nTUDO PASSOU' : `\n${failed} FALHA(S)`);
 process.exit(failed === 0 ? 0 : 1);
