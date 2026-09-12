@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node schema.test.mjs"
+    "test": "node schema.test.mjs",
+    "esquema": "node gerar_esquema.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.0"

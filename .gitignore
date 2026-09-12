@@ -6,6 +6,10 @@
 *.jks
 key.properties
 supabase/.temp/
+# Gerado por `npm run esquema` a partir de migrations/. Duas copias do mesmo
+# SQL no git viram duas verdades.
+supabase/esquema_completo.sql
+
 
 # Node — so os testes de schema usam, e eles se reinstalam com npm ci
 node_modules/
