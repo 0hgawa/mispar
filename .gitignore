@@ -46,3 +46,8 @@ design/prints/
 !.vscode/launch.json
 .DS_Store
 Thumbs.db
+
+# Chaves por ambiente. A publishable key e publica por design, mas o arquivo
+# e de maquina: cada um aponta para o projeto dele. O molde e example.json.
+app/config/dev.json
+app/config/prod.json
