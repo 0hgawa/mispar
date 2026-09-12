@@ -64,6 +64,9 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
     final isClosed =
         appointment.status == AppointmentStatus.done ||
         appointment.status == AppointmentStatus.noShow;
+    // A hora chegou. Marcada pelo **inicio**, e nao pelo fim: as 12:31 de um
+    // horario das 12:30 ele ja nao apareceu, e nao ha mais o que lembrar.
+    final hasArrived = appointment.startsAt.isBefore(DateTime.now());
     // Como a barbearia mais recebe. Sai do histórico, e não de um ajuste — o
     // mesmo que o robô faz com o serviço de sempre do cliente.
     final usual = ref.watch(usualPaymentProvider).value;
@@ -275,34 +278,35 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
                   child: const Text('Concluir atendimento'),
                 ),
                 const SizedBox(height: Dimens.gapMedium),
-                // Falta e o que mais custa caro na cadeira, e o lembrete e o
-                // que mais reduz. Vai com o texto pronto: o Marcos so revisa
-                // e manda.
-                OutlinedButton.icon(
-                  onPressed: () => _remind(context, client),
-                  icon: const Icon(Symbols.chat_rounded, size: 20, weight: 500),
-                  label: const Text('Lembrar no WhatsApp'),
-                ),
+                // As duas trocam de lugar conforme a hora, e nunca aparecem
+                // juntas: lembrar depois que o horario passou nao serve para
+                // nada, e marcar falta antes de a hora chegar e adivinhacao.
+                // Uma de cada vez deixa a folha com o que cabe fazer agora.
+                if (!hasArrived)
+                  // Falta e o que mais custa caro na cadeira, e o lembrete e
+                  // o que mais reduz. Vai com o texto pronto: o Marcos so
+                  // revisa e manda.
+                  OutlinedButton.icon(
+                    onPressed: () => _remind(context, client),
+                    icon: const Icon(
+                      Symbols.chat_rounded,
+                      size: 20,
+                      weight: 500,
+                    ),
+                    label: const Text('Lembrar no WhatsApp'),
+                  )
+                else
+                  OutlinedButton(
+                    onPressed: () => mark(
+                      AppointmentStatus.noShow,
+                      '${client.name} marcado como falta.',
+                    ),
+                    child: const Text('Não apareceu'),
+                  ),
                 const SizedBox(height: Dimens.gapMedium),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => _reschedule(context, client),
-                        child: const Text('Remarcar'),
-                      ),
-                    ),
-                    const SizedBox(width: Dimens.gapSmall),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => mark(
-                          AppointmentStatus.noShow,
-                          '${client.name} marcado como falta.',
-                        ),
-                        child: const Text('Não apareceu'),
-                      ),
-                    ),
-                  ],
+                OutlinedButton(
+                  onPressed: () => _reschedule(context, client),
+                  child: const Text('Remarcar'),
                 ),
                 const SizedBox(height: 4),
                 TextButton(
