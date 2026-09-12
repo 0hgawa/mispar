@@ -13,7 +13,6 @@ import 'package:marcos_barber/src/features/clients/presentation/clients_view_mod
 import 'package:marcos_barber/src/features/clients/presentation/import_contacts_screen.dart';
 import 'package:marcos_barber/src/features/clients/presentation/widgets/client_card.dart';
 import 'package:marcos_barber/src/features/settings/domain/drifted_rule.dart';
-import 'package:marcos_barber/src/shared/formatters/money.dart';
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
 import 'package:marcos_barber/src/shared/widgets/empty_state.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
@@ -124,8 +123,6 @@ class _DriftedBanner extends ConsumerWidget {
     final drifted = winBackList(all, rule);
     if (drifted.isEmpty) return const SizedBox.shrink();
 
-    final value = formatMoney(winBackValueCents(drifted));
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         Dimens.screenGutter,
@@ -156,11 +153,10 @@ class _DriftedBanner extends ConsumerWidget {
                     style: theme.textTheme.bodyLarge?.copyWith(color: alert),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  value,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: alert),
-                ),
+                // Sem dinheiro aqui. Um valor vermelho ao lado de "clientes
+                // sumiram", sem dizer o que é, se lê como dívida — e numa
+                // barbearia onde existe fiado essa é a leitura mais cara
+                // possível. A conta por cliente está a um toque, com rótulo.
                 Icon(
                   Symbols.chevron_right_rounded,
                   weight: 500,

@@ -11,6 +11,7 @@ ClientSummary _summary({
   required String name,
   required int daysAgo,
   int spentCents = 4000,
+  int visitCount = 1,
   bool isActive = true,
   String? usualService,
 }) {
@@ -21,7 +22,7 @@ ClientSummary _summary({
       phone: '11988124471',
       isActive: isActive,
     ),
-    visitCount: 1,
+    visitCount: visitCount,
     spentCents: spentCents,
     lastVisit: DateTime.now().subtract(Duration(days: daysAgo)),
     usualService: usualService,
@@ -86,7 +87,7 @@ void main() {
       expect(lista, isEmpty);
     });
 
-    test('o que gastou mais vem primeiro, e nao o que sumiu ha mais tempo', () {
+    test('quem deixa mais por visita vem primeiro', () {
       final lista = winBackList([
         _summary(name: 'Corte', daysAgo: 300, spentCents: 3000),
         _summary(name: 'Platinado', daysAgo: 50, spentCents: 24000),
@@ -94,6 +95,31 @@ void main() {
       ], _ligado);
 
       expect(lista.map((s) => s.client.name), ['Platinado', 'Barba', 'Corte']);
+    });
+
+    test('o freguês antigo de pezinho nao passa na frente do platinado', () {
+      // O motivo da mudança: pelo total de sempre, vinte pezinhos venciam um
+      // platinado. Por visita, quem vale mais a mensagem sobe.
+      final lista = winBackList([
+        _summary(
+          name: 'Pezinho',
+          daysAgo: 200,
+          spentCents: 40000,
+          visitCount: 20,
+        ),
+        _summary(name: 'Platinado', daysAgo: 60, spentCents: 12000),
+      ], _ligado);
+
+      expect(lista.map((s) => s.client.name), ['Platinado', 'Pezinho']);
+    });
+
+    test('empatados em dinheiro, o mais esquecido vem primeiro', () {
+      final lista = winBackList([
+        _summary(name: 'Recente', daysAgo: 40, spentCents: 6000),
+        _summary(name: 'Esquecido', daysAgo: 300, spentCents: 6000),
+      ], _ligado);
+
+      expect(lista.map((s) => s.client.name), ['Esquecido', 'Recente']);
     });
   });
 

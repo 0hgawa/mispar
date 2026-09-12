@@ -47,11 +47,12 @@ class DriftedScreen extends ConsumerWidget {
               SliverToBoxAdapter(
                 child: PageSubtitle(switch (drifted.length) {
                   0 => 'quem não aparece há mais de ${rule.days} dias',
+                  // Verbo antes do dinheiro: "R$ 120 já gastou aqui" deixava
+                  // a frase sem sujeito, e o valor virava o dono da ação.
                   1 =>
-                    '${formatMoney(winBackValueCents(drifted))} já gastou '
-                        'aqui',
+                    'já gastou ${formatMoney(winBackValueCents(drifted))} aqui',
                   _ =>
-                    '${formatMoney(winBackValueCents(drifted))} já gastaram '
+                    'já gastaram ${formatMoney(winBackValueCents(drifted))} '
                         'aqui',
                 }),
               ),
@@ -95,12 +96,16 @@ class _DriftedRow extends StatelessWidget {
 
     return ClientRow(
       name: client.name,
-      // Quanto tempo sumiu e quanto já deixou aqui: é com esses dois que se
-      // decide quem chamar primeiro. A regra do sumiço só vale para quem já
-      // veio alguma vez, então aqui a última visita nunca é nula.
+      // Quanto tempo sumiu e quanto ele deixa por visita: é com esses dois
+      // que se decide quem chamar primeiro, e é o segundo que manda na ordem
+      // da lista. A regra do sumiço só vale para quem já veio alguma vez,
+      // então aqui a última visita nunca é nula.
+      //
+      // "por visita", e não o total de sempre: número solto ao lado de um
+      // nome, numa barbearia onde existe fiado, se lê como dívida.
       detail:
           '${formatTimeAgo(summary.lastVisit!)} · '
-          '${formatMoney(summary.spentCents)}',
+          '${formatMoney(summary.averageTicketCents)} por visita',
       detailLines: 1,
       trailing: IconButton.filledTonal(
         icon: const Icon(Symbols.chat_rounded, weight: 500, size: 22),
