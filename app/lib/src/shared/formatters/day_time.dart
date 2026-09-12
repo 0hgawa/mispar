@@ -91,3 +91,17 @@ String formatWeekdayAndDay(DateTime day) {
   final weekday = formatShortWeekday(day);
   return '${weekday[0].toUpperCase()}${weekday.substring(1)}, ${day.day}';
 }
+
+/// O dia ja acabou.
+///
+/// Compara so a data, e nunca a hora: as onze da manha, "hoje" ainda nao
+/// passou, mesmo com o horario das nove ja vencido. Quem cuida da hora dentro
+/// do dia e quem olha a vaga.
+bool hasPassed(DateTime day, {DateTime? now}) {
+  final today = now ?? DateTime.now();
+  return DateTime(
+    day.year,
+    day.month,
+    day.day,
+  ).isBefore(DateTime(today.year, today.month, today.day));
+}

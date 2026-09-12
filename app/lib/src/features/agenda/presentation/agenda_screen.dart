@@ -12,6 +12,7 @@ import 'package:mispar/src/features/agenda/presentation/widgets/day_view.dart';
 import 'package:mispar/src/features/agenda/presentation/widgets/share_slots_screen.dart';
 import 'package:mispar/src/features/agenda/presentation/widgets/week_view.dart';
 import 'package:mispar/src/features/booking/presentation/new_appointment_view_model.dart';
+import 'package:mispar/src/features/reports/presentation/income_form.dart';
 import 'package:mispar/src/shared/formatters/day_time.dart';
 
 /// Como o Marcos esta olhando a agenda agora.
@@ -39,18 +40,27 @@ class AgendaScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final view = ref.watch(agendaViewProvider);
+    final isPast = hasPassed(ref.watch(selectedDayProvider));
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         // Marca no dia que esta na tela, e nao em hoje: o Marcos abriu sexta
         // para marcar em sexta.
+        //
+        // Em dia que ja passou o botao muda de tarefa em vez de falhar. Hora
+        // vencida nao se reserva — mas o corte que aconteceu ali ainda tem que
+        // entrar no Caixa, e era exatamente isso que o formulario de marcar
+        // deixava preencher para depois nao salvar.
         onPressed: () {
-          ref
-              .read(bookingProvider.notifier)
-              .startOnDay(ref.read(selectedDayProvider));
+          final day = ref.read(selectedDayProvider);
+          if (hasPassed(day)) {
+            unawaited(IncomeForm.show(context, at: day));
+            return;
+          }
+          ref.read(bookingProvider.notifier).startOnDay(day);
           unawaited(context.push(Routes.newAppointment));
         },
-        tooltip: 'Marcar horário',
+        tooltip: isPast ? 'Lançar atendimento' : 'Marcar horário',
         child: const Icon(Symbols.add_rounded, weight: 600, size: 28),
       ),
       body: SafeArea(

@@ -8,6 +8,7 @@ import 'package:mispar/src/app.dart';
 import 'package:mispar/src/core/config/env.dart';
 import 'package:mispar/src/core/data/database/app_database.dart';
 import 'package:mispar/src/core/data/database/seed.dart';
+import 'package:mispar/src/core/data/remote/session.dart';
 import 'package:mispar/src/core/data/sync/agenda_sync.dart';
 import 'package:mispar/src/features/reports/data/expense_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -47,9 +48,20 @@ Future<void> main() async {
     overrides: [appDatabaseProvider.overrideWithValue(database)],
   );
 
-  // Comeca depois do runApp: a primeira tela nao espera a rede.
+  // A copia anda com a sessao, e nao com o app.
+  //
+  // Sem login o app e `anon`, e `anon` nao le nada — e de proposito: a chave
+  // publicavel viaja dentro do APK, e sozinha ela nao pode valer a agenda
+  // inteira. Comecar a sincronia antes de entrar so gastaria bateria pedindo
+  // 401.
+  //
+  // `fireImmediately` porque o Supabase devolve a sessao ja guardada no
+  // aparelho no primeiro evento: quem entrou ontem nao entra de novo hoje.
   if (Env.hasBackend) {
-    unawaited(container.read(agendaSyncProvider).start());
+    container.listen(sessionProvider, (_, session) {
+      final sync = container.read(agendaSyncProvider);
+      unawaited(session.value == null ? sync.dispose() : sync.start());
+    }, fireImmediately: true);
   }
 
   runApp(

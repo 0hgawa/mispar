@@ -73,12 +73,15 @@ Future<void> _pickDay(
   DateTime current,
 ) async {
   final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
   final chosen = await showDatePicker(
     context: context,
-    initialDate: current,
+    // Nunca antes do proprio limite: vindo de um dia que ja passou, o
+    // calendario abria com o assert do Flutter e simplesmente nao abria.
+    initialDate: current.isBefore(today) ? today : current,
     // Ao contrario da despesa, aqui o passado e que nao existe: horario que ja
     // passou nao se reserva.
-    firstDate: DateTime(now.year, now.month, now.day),
+    firstDate: today,
     lastDate: DateTime(now.year + 2),
     helpText: 'Dia do horário',
     cancelText: 'Voltar',
@@ -158,7 +161,8 @@ class _TimeChoice extends ConsumerWidget {
                   'Este dia está fechado — feriado, médico ou viagem. '
                       'Escolha outro acima.',
                 NoTimeReason.past =>
-                  'Os horários de hoje já passaram. Escolha outro dia acima.',
+                  'Os horários deste dia já passaram. Escolha outro acima — '
+                      'ou, se o atendimento já aconteceu, lance no Caixa.',
                 NoTimeReason.full =>
                   'Este dia já está cheio para esse serviço. Escolha outro '
                       'acima.',

@@ -30,7 +30,10 @@ class FreeSlotTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(Dimens.cardRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: isGone ? null : onTap,
+        // Tocavel mesmo depois de passar. Antes o toque morria em silencio,
+        // e silencio num cartao que parece botao e o pior tipo de resposta:
+        // quem chama decide o que fazer com a hora vencida.
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: Dimens.cardPadding,

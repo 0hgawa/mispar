@@ -38,18 +38,29 @@ final _catalogueProvider = StreamProvider<List<Service>>(
 /// cadastrado, e exigir o nome ali faria o lançamento não acontecer — que é
 /// exatamente o problema que esta tela resolve.
 class IncomeForm extends ConsumerStatefulWidget {
-  const new({this.entry, super.key});
+  const new({this.entry, this.at, super.key});
 
   /// O lançamento sendo corrigido. Nulo quando é um novo.
   final Appointment? entry;
+
+  /// O dia que já vem escolhido. Nulo abre em hoje.
+  final DateTime? at;
 
   /// Abre em tela cheia, com o X no canto — o mesmo componente da despesa.
   ///
   /// Corrigir receita e corrigir despesa são a mesma tarefa; usar folha de
   /// baixo de um lado e tela cheia do outro era o app falando duas línguas
   /// para dizer a mesma coisa.
-  static Future<void> show(BuildContext context, {Appointment? entry}) {
-    return openTask(context, (_) => IncomeForm(entry: entry));
+  ///
+  /// [at] pré-preenche o dia, para quem chegou aqui pela agenda de um dia que
+  /// já passou: o horário não se marca mais, mas o atendimento que aconteceu
+  /// ali ainda precisa entrar no Caixa.
+  static Future<void> show(
+    BuildContext context, {
+    Appointment? entry,
+    DateTime? at,
+  }) {
+    return openTask(context, (_) => IncomeForm(entry: entry, at: at));
   }
 
   @override
@@ -64,7 +75,7 @@ class _IncomeFormState extends ConsumerState<IncomeForm> {
   late Service? _service = widget.entry?.service;
   late PaymentMethod? _paidWith = widget.entry?.paidWith;
   late Client? _client = widget.entry?.client;
-  late DateTime _at = widget.entry?.startsAt ?? DateTime.now();
+  late DateTime _at = widget.entry?.startsAt ?? widget.at ?? DateTime.now();
   bool _saving = false;
 
   bool get _isEditing => widget.entry != null;

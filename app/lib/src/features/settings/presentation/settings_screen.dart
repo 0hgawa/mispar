@@ -46,6 +46,12 @@ class SettingsScreen extends StatelessWidget {
               onTap: () => context.push(Routes.shop),
             ),
             _Entry(
+              icon: Symbols.cloud_rounded,
+              title: 'Cópia na nuvem',
+              detail: 'Para não perder tudo com o celular',
+              onTap: () => context.push(Routes.cloud),
+            ),
+            _Entry(
               icon: Symbols.payments_rounded,
               title: 'Pagamento',
               detail: 'O que a barbearia aceita receber',

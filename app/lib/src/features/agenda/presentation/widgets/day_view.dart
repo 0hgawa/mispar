@@ -13,6 +13,7 @@ import 'package:mispar/src/features/agenda/presentation/widgets/appointment_shee
 import 'package:mispar/src/features/agenda/presentation/widgets/closed_slot_tile.dart';
 import 'package:mispar/src/features/agenda/presentation/widgets/free_slot_tile.dart';
 import 'package:mispar/src/features/booking/presentation/new_appointment_view_model.dart';
+import 'package:mispar/src/features/reports/presentation/income_form.dart';
 import 'package:mispar/src/shared/formatters/money.dart';
 import 'package:mispar/src/shared/widgets/app_card.dart';
 import 'package:mispar/src/shared/widgets/async_view.dart';
@@ -68,6 +69,15 @@ class DayView extends ConsumerWidget {
                           FreeSlot() => FreeSlotTile(
                             slot,
                             onTap: () {
+                              // A vaga que ja passou abre o lancamento, e nao
+                              // a marcacao: ninguem vai sentar na cadeira as
+                              // dez da manha de ontem.
+                              if (slot.end.isBefore(DateTime.now())) {
+                                unawaited(
+                                  IncomeForm.show(context, at: slot.start),
+                                );
+                                return;
+                              }
                               ref
                                   .read(bookingProvider.notifier)
                                   .startAtSlot(slot.start);

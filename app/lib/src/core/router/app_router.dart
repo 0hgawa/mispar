@@ -13,6 +13,7 @@ import 'package:mispar/src/features/reports/presentation/earned_screen.dart';
 import 'package:mispar/src/features/reports/presentation/expense_categories_screen.dart';
 import 'package:mispar/src/features/reports/presentation/spent_screen.dart';
 import 'package:mispar/src/features/services/presentation/services_screen.dart';
+import 'package:mispar/src/features/settings/presentation/cloud_screen.dart';
 import 'package:mispar/src/features/settings/presentation/drifted_settings_screen.dart';
 import 'package:mispar/src/features/settings/presentation/payments_screen.dart';
 import 'package:mispar/src/features/settings/presentation/reminder_screen.dart';
@@ -41,6 +42,7 @@ abstract final class Routes {
   static const driftedRule = '$settings/sumiram';
   static const payments = '$settings/pagamento';
   static const shop = '$settings/barbearia';
+  static const cloud = '$settings/nuvem';
 }
 
 final _rootNavigator = GlobalKey<NavigatorState>();
@@ -154,6 +156,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'barbearia',
                     builder: (context, state) => const ShopScreen(),
+                  ),
+                  GoRoute(
+                    path: 'nuvem',
+                    builder: (context, state) => const CloudScreen(),
                   ),
                 ],
               ),
