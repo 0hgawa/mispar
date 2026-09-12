@@ -30,6 +30,12 @@ abstract class Appointment with _$Appointment {
     /// Digitado direto no Caixa, sem ter passado pela agenda. E o que decide
     /// se tocar nele abre o formulario que o criou ou a folha do horario.
     @Default(false) bool isWalkIn,
+
+    /// O atendimento aconteceu e o dinheiro nao entrou.
+    ///
+    /// Enquanto for verdade, [paidWith] e nulo e o Caixa nao conta o valor
+    /// como entrada — ele aparece a parte, como divida.
+    @Default(false) bool isOwed,
   }) = _Appointment;
 
   const new _();

@@ -204,20 +204,35 @@ class _Row extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
+          // O fiado aparece na lista e nao entra no total la em cima. Se
+          // ficasse fora da lista, o barbeiro nao teria onde achar quem deve —
+          // e e aqui que ele procura dinheiro.
           subtitle: Text(
-            appointment.paidWith == null
-                ? appointment.service.name
-                : '${appointment.service.name} · ${appointment.paidWith!.label}',
+            switch (appointment) {
+              _ when appointment.isOwed =>
+                '${appointment.service.name} · fiado',
+              _ when appointment.paidWith != null =>
+                '${appointment.service.name} · ${appointment.paidWith!.label}',
+              _ => appointment.service.name,
+            },
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: colors.onSurfaceVariant,
+              color: appointment.isOwed
+                  ? theme.status.alert
+                  : colors.onSurfaceVariant,
             ),
           ),
           trailing: Text(
             formatMoney(appointment.priceCents),
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w700,
+              // Riscado: o valor esta na linha porque o corte aconteceu, mas
+              // ele nao esta no total de cima.
+              decoration: appointment.isOwed
+                  ? TextDecoration.lineThrough
+                  : null,
+              color: appointment.isOwed ? theme.status.alert : null,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),

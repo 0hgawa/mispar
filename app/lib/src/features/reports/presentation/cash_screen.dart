@@ -389,49 +389,118 @@ class _Doors extends ConsumerWidget {
     final expected = report?.expectedCents ?? 0;
     final lanced = spent?.expenses.length ?? 0;
     final fixed = spent?.fixedCents ?? 0;
+    final owed = report?.owedCents ?? 0;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Dimens.screenGutter),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: _Door(
-                label: 'Entrou',
-                cents: report?.earnedCents ?? 0,
-                // O que esta marcado e a noticia mais util deste lado: e o que
-                // ainda pode entrar antes do periodo fechar.
-                //
-                // Uma linha so, e so dinheiro: com "em 14 horarios" junto, a
-                // nota quebrava em duas e o par de cartoes ficava torto — um
-                // alto, outro baixo. A contagem esta a um toque, dentro.
-                note: expected > 0
-                    ? '+ ${formatMoney(expected)} a receber'
-                    : served == 1
-                    ? '1 atendimento'
-                    : '$served atendimentos',
-                onTap: () => context.push(Routes.earned),
-              ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _Door(
+                    label: 'Entrou',
+                    cents: report?.earnedCents ?? 0,
+                    // O que esta marcado e a noticia mais util deste lado: e o que
+                    // ainda pode entrar antes do periodo fechar.
+                    //
+                    // Uma linha so, e so dinheiro: com "em 14 horarios" junto, a
+                    // nota quebrava em duas e o par de cartoes ficava torto — um
+                    // alto, outro baixo. A contagem esta a um toque, dentro.
+                    // Fiado antes de "a receber": o corte ja foi feito e o
+                    // dinheiro esta na mao do cliente, o que e mais urgente que um
+                    // horario que ainda nem aconteceu.
+                    note: owed > 0
+                        ? '${formatMoney(owed)} fiado'
+                        : expected > 0
+                        ? '+ ${formatMoney(expected)} a receber'
+                        : served == 1
+                        ? '1 atendimento'
+                        : '$served atendimentos',
+                    onTap: () => context.push(Routes.earned),
+                  ),
+                ),
+                const SizedBox(width: Dimens.cardGap),
+                Expanded(
+                  child: _Door(
+                    label: 'Saiu',
+                    cents: spent?.totalCents ?? 0,
+                    // Quanto disto volta no mês que vem é a notícia deste lado —
+                    // o espelho do "a receber" do outro. A contagem de
+                    // lançamentos só aparece quando não há nada fixo: ela não diz
+                    // nada que abrir a tela não diga melhor.
+                    note: fixed > 0
+                        ? '${formatMoney(fixed)} todo mês'
+                        : lanced == 1
+                        ? '1 lançamento'
+                        : '$lanced lançamentos',
+                    onTap: () => context.push(Routes.spent),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: Dimens.cardGap),
-            Expanded(
-              child: _Door(
-                label: 'Saiu',
-                cents: spent?.totalCents ?? 0,
-                // Quanto disto volta no mês que vem é a notícia deste lado —
-                // o espelho do "a receber" do outro. A contagem de
-                // lançamentos só aparece quando não há nada fixo: ela não diz
-                // nada que abrir a tela não diga melhor.
-                note: fixed > 0
-                    ? '${formatMoney(fixed)} todo mês'
-                    : lanced == 1
-                    ? '1 lançamento'
-                    : '$lanced lançamentos',
-                onTap: () => context.push(Routes.spent),
-              ),
+          ),
+          if (owed > 0) _Owed(cents: owed),
+        ],
+      ),
+    );
+  }
+}
+
+/// O que foi atendido e nao foi pago.
+///
+/// Fora dos dois cartoes de proposito: nao e entrada — o dinheiro esta com o
+/// cliente — e nao e saida. Mas tambem nao pode ficar invisivel, senao o
+/// barbeiro so descobre o fiado quando reencontra a pessoa.
+class _Owed extends StatelessWidget {
+  const new({required this.cents});
+
+  final int cents;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final alert = theme.status.alert;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: Dimens.cardGap),
+      child: Material(
+        color: alert.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(Dimens.cardRadius),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => context.push(Routes.earned),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Dimens.cardPadding,
+              vertical: 13,
             ),
-          ],
+            child: Row(
+              children: [
+                Icon(
+                  Symbols.pending_actions_rounded,
+                  weight: 500,
+                  color: alert,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '${formatMoney(cents)} fiado',
+                    style: theme.textTheme.bodyLarge?.copyWith(color: alert),
+                  ),
+                ),
+                Icon(
+                  Symbols.chevron_right_rounded,
+                  weight: 500,
+                  size: 20,
+                  color: alert,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -32,6 +32,7 @@ for (const file of [
   '0013_accepts_the_phone.sql',
   '0014_ids_de_texto.sql',
   '0015_a_lapide_se_escreve_sozinha.sql',
+  '0016_fiado.sql',
 ]) {
   try {
     await db.exec(readFileSync(DIR + file, 'utf8'));

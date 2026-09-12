@@ -197,6 +197,16 @@ class Appointments extends Table {
   /// nao da para conferir a maquininha contra o que o dia rendeu.
   TextColumn get paymentMethod => text().nullable()();
 
+  /// O atendimento aconteceu e o dinheiro não entrou.
+  ///
+  /// Fiado existe em barbearia de bairro, e antes não tinha onde morar: ou o
+  /// Marcos mentia uma forma de pagamento — e o Caixa passava a dizer que ele
+  /// tem um dinheiro que não tem — ou deixava o horário aberto para sempre,
+  /// como se o cliente não tivesse vindo.
+  ///
+  /// A cadeira foi usada, então o atendimento fecha; o dinheiro fica devendo.
+  BoolColumn get owed => boolean().withDefault(const Constant(false))();
+
   /// Digitado direto no Caixa, sem ter passado pela agenda.
   ///
   /// Coluna, e nao "sem cliente": o balcao tambem se cadastra, e quem lancou

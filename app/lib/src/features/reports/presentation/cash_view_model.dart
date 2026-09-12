@@ -157,6 +157,7 @@ class CashReport {
     required this.lostCents,
     required this.servedCount,
     required this.soldCount,
+    required this.owedCents,
     required this.noShowCount,
     required this.entries,
   });
@@ -176,6 +177,14 @@ class CashReport {
   final int servedCount;
 
   final int soldCount;
+
+  /// O que foi atendido e nao foi pago.
+  ///
+  /// Fora do [earnedCents] de proposito: o corte aconteceu, mas o dinheiro nao
+  /// entrou. Somar os dois faria o Caixa dizer que a barbearia tem um valor
+  /// que esta na mao do cliente.
+  final int owedCents;
+
   final int noShowCount;
 
   /// Os atendimentos que formam o total, do mais recente para o mais antigo.
@@ -299,6 +308,7 @@ Stream<CashReport> cashReport(Ref ref) {
         var lost = 0;
         var served = 0;
         var sold = 0;
+        var owed = 0;
         var noShows = 0;
         final entries = <Appointment>[];
 
@@ -307,7 +317,14 @@ Stream<CashReport> cashReport(Ref ref) {
 
           switch (appointment.status) {
             case AppointmentStatus.done:
-              earned += price;
+              // Fiado conta como atendimento e nao como entrada: a cadeira foi
+              // usada do mesmo jeito, o dinheiro e que ficou com o cliente.
+              if (appointment.isOwed) {
+                owed += price;
+              } else {
+                earned += price;
+              }
+
               if (appointment.service.isProduct) {
                 sold++;
               } else {
@@ -333,6 +350,7 @@ Stream<CashReport> cashReport(Ref ref) {
           lostCents: lost,
           servedCount: served,
           soldCount: sold,
+          owedCents: owed,
           noShowCount: noShows,
           entries: entries.reversed.toList(growable: false),
         );

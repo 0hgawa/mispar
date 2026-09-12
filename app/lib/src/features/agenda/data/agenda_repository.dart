@@ -110,17 +110,23 @@ class AgendaRepository {
   ///
   /// A forma de pagamento so faz sentido em atendimento concluido: reabrir
   /// limpa o que estava anotado, senao o Caixa contaria um Pix que nao houve.
+  ///
+  /// [owed] fecha o atendimento **sem** receber: a cadeira foi usada, o
+  /// dinheiro ficou devendo. Devendo e pago se excluem — anotar os dois faria
+  /// o mesmo valor contar como entrada e como divida.
   Future<void> updateStatus(
     String id,
     AppointmentStatus status, {
     PaymentMethod? paidWith,
+    bool owed = false,
   }) {
+    final concluido = status == AppointmentStatus.done;
+
     return (_db.update(_db.appointments)..where((a) => a.id.equals(id))).write(
       AppointmentsCompanion(
         status: Value(status.wireName),
-        paymentMethod: Value(
-          status == AppointmentStatus.done ? paidWith?.name : null,
-        ),
+        paymentMethod: Value(concluido && !owed ? paidWith?.name : null),
+        owed: Value(concluido && owed),
       ),
     );
   }
@@ -154,6 +160,27 @@ class AgendaRepository {
   /// não se resolve editando.
   Future<void> delete(String id) {
     return (_db.delete(_db.appointments)..where((a) => a.id.equals(id))).go();
+  }
+
+  /// Os atendimentos fechados sem receber, do mais novo para o mais antigo.
+  Stream<List<Appointment>> watchOwed() {
+    final query =
+        _db.select(_db.appointments).join([
+            leftOuterJoin(
+              _db.clients,
+              _db.clients.id.equalsExp(_db.appointments.clientId),
+            ),
+            innerJoin(
+              _db.services,
+              _db.services.id.equalsExp(_db.appointments.serviceId),
+            ),
+          ])
+          ..where(_db.appointments.owed.equals(true))
+          ..orderBy([OrderingTerm.desc(_db.appointments.startsAt)]);
+
+    return query.watch().map(
+      (rows) => rows.map(_toDomain).toList(growable: false),
+    );
   }
 
   Stream<List<Appointment>> _watchRange(
@@ -204,6 +231,7 @@ class AgendaRepository {
       priceCents: appointment.priceCents,
       paidWith: PaymentMethod.parse(appointment.paymentMethod),
       isWalkIn: appointment.walkIn,
+      isOwed: appointment.owed,
       client: client == null
           ? null
           : Client(
@@ -237,6 +265,15 @@ final agendaRepositoryProvider = Provider<AgendaRepository>(
 ///
 /// `autoDispose` porque só a folha do horário pergunta: guardado, deixaria uma
 /// consulta de sessenta dias escutando o banco para sempre.
+/// O que a barbearia deixou de receber e ainda pode entrar.
+///
+/// Sem janela: divida velha continua sendo divida. O que sai daqui e a lista
+/// inteira do que esta em aberto, e nao um recorte do mes.
+final StreamProvider<List<Appointment>> owedProvider =
+    StreamProvider.autoDispose<List<Appointment>>((ref) {
+      return ref.watch(agendaRepositoryProvider).watchOwed();
+    });
+
 final StreamProvider<PaymentMethod?> usualPaymentProvider =
     StreamProvider.autoDispose<PaymentMethod?>((ref) {
       final now = DateTime.now();

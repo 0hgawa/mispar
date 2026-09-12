@@ -262,6 +262,7 @@ class AgendaSync {
             'status': row.status,
             'payment_method': row.paymentMethod,
             'walk_in': row.walkIn,
+            'owed': row.owed,
           },
       ]);
 

@@ -79,10 +79,11 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
       AppointmentStatus status,
       String toast, {
       PaymentMethod? paidWith,
+      bool owed = false,
     }) async {
       await ref
           .read(agendaRepositoryProvider)
-          .updateStatus(appointment.id, status, paidWith: paidWith);
+          .updateStatus(appointment.id, status, paidWith: paidWith, owed: owed);
       if (!context.mounted) return;
       Navigator.of(context).pop();
       showSnack(context, toast);
@@ -187,7 +188,10 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
               ],
               const SizedBox(height: Dimens.gapLarge),
 
-              if (isClosed) ...[
+              // `!_asking` para o fiado poder voltar a perguntar "recebeu
+              // como?": ele ja esta fechado, e sem isto tocar em "Recebi" nao
+              // mostrava nada — o ramo de fechado vencia para sempre.
+              if (isClosed && !_asking) ...[
                 if (appointment.paidWith != null) ...[
                   Text(
                     // 'Pix' e nome proprio: minusculo ali ficava errado.
@@ -197,6 +201,22 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
                     ),
                   ),
                   const SizedBox(height: Dimens.gapMedium),
+                ],
+                if (appointment.isOwed) ...[
+                  Text(
+                    'Ficou devendo ${formatMoney(appointment.priceCents)}.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.status.alert,
+                    ),
+                  ),
+                  const SizedBox(height: Dimens.gapMedium),
+                  FilledButton(
+                    // Volta para a mesma pergunta de "recebeu como?": quitar e
+                    // concluir de novo, agora com o dinheiro na mao.
+                    onPressed: () => setState(() => _asking = true),
+                    child: const Text('Recebi'),
+                  ),
+                  const SizedBox(height: Dimens.gapSmall),
                 ],
                 // Venda de balcao e coisa que o Marcos digitou, e se corrige
                 // no mesmo formulario que a criou — o mesmo que a despesa faz.
@@ -261,6 +281,25 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
                       ),
                     ],
                   ],
+                ),
+                const SizedBox(height: 4),
+                // Fiado no lugar de mentir uma forma de pagamento.
+                //
+                // Sem ele o Marcos tinha duas saidas e as duas mentiam: anotar
+                // um Pix que nao houve — e o Caixa passa a dizer que ele tem
+                // um dinheiro que esta na mao do cliente — ou deixar o horario
+                // aberto, como se ninguem tivesse sentado na cadeira.
+                TextButton(
+                  onPressed: () => mark(
+                    AppointmentStatus.done,
+                    'Atendimento concluído. '
+                    '${formatMoney(appointment.priceCents)} em aberto.',
+                    owed: true,
+                  ),
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size.fromHeight(Dimens.buttonHeight),
+                  ),
+                  child: const Text('Ficou devendo'),
                 ),
                 // Sem "anotar depois".
                 //
