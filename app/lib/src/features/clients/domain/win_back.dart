@@ -1,4 +1,5 @@
 import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
+import 'package:marcos_barber/src/features/settings/domain/drifted_rule.dart';
 import 'package:marcos_barber/src/shared/whatsapp.dart';
 
 /// Quem sumiu, na ordem de quem vale mais chamar.
@@ -7,10 +8,16 @@ import 'package:marcos_barber/src/shared/whatsapp.dart';
 /// cliente de platinado que some vale três cortes simples, e é ele que tem
 /// que estar no topo da lista quando sobram cinco minutos para mandar
 /// mensagem. Quem está fora da lista fica de fora — foi tirado de propósito.
-List<ClientSummary> winBackList(List<ClientSummary> all) {
+///
+/// Com a regra desligada a lista é vazia, e some junto com ela tudo que
+/// depende dela: a faixa no topo da aba de Clientes, e o caminho para cá.
+List<ClientSummary> winBackList(List<ClientSummary> all, DriftedRule rule) {
+  if (!rule.isOn) return const [];
+
   final drifted = [
     for (final summary in all)
-      if (summary.hasDrifted && summary.client.isActive) summary,
+      if (summary.hasDriftedAfter(rule.days) && summary.client.isActive)
+        summary,
   ]..sort((a, b) => b.spentCents.compareTo(a.spentCents));
 
   return drifted;

@@ -196,29 +196,81 @@ abstract final class AppTheme {
     );
   }
 
+  /// A escala inteira, e nenhum tamanho fora dela.
+  ///
+  /// Os cinco grupos do Material 3 — display, headline, title, body, label —
+  /// com os degraus desta casa: mais apertados e mais pesados que o padrao do
+  /// Google, porque a tela e de trabalho e se le em pe, com pressa.
+  ///
+  /// **Cada papel tem um posto, e o posto manda:**
+  ///
+  /// - `displayLarge`  40/700 — o numero que resume a tela
+  /// - `displayMedium` 34/700 — campo de dinheiro sendo digitado
+  /// - `displaySmall`  26/700 — numero grande dentro de um cartao
+  /// - `headlineMedium` 24/700 — titulo de tela
+  /// - `headlineSmall`  19/700 — nome no cartao: cliente, horario
+  /// - `titleLarge`     17/700 — numero de destaque em linha
+  /// - `titleMedium`    15/500 — linha de apoio, em tom apagado
+  /// - `titleSmall`     13/700 — rotulo de secao
+  /// - `bodyLarge`      16/600 — item de lista que se toca
+  /// - `bodyMedium`     15/500 — texto corrente
+  /// - `bodySmall`      13/500 — metadado: hora, duracao, contagem
+  /// - `labelLarge`     15/700 — botao
+  /// - `labelMedium`  12.5/600 — pilula e selo
+  /// - `labelSmall`     11/600 — cabecalho de coluna, em maiuscula
+  ///
+  /// Tamanho repetido entre grupos e de proposito, e e o que o proprio
+  /// Material faz: `titleMedium`, `bodyMedium` e `labelLarge` sao todos 15, e o
+  /// que os separa e o peso — 500, 500 e 700 — e o tom. O que nao pode existir
+  /// e tamanho escrito fora daqui: era assim que 11, 17, 26 e 34 andavam
+  /// soltos pelas telas, cada um respondendo so a si mesmo.
+  ///
+  /// `titleMedium` ja vem apagado porque todo uso dele e linha de apoio; sem a
+  /// cor embutida, os nove lugares repetiriam o mesmo `copyWith`.
+  ///
+  /// **Um peso so em cima.** Display, headline, title e label fortes sao todos
+  /// 700 — quem separa um nivel do outro e o tamanho e o tom, nao o peso. Era
+  /// 800 no topo, e 800 num texto de 40 fecha os contornos das letras e deixa
+  /// a tela com cara de carimbo. Medido no Hallow, que resolve a hierarquia
+  /// inteira com um negrito so.
   static TextTheme _textTheme(TextTheme base, Color ink, Color soft) {
     return base
         .copyWith(
-          // O numero grande de dinheiro: o unico lugar que passa de 24.
-          displaySmall: const TextStyle(
+          displayLarge: const TextStyle(
             fontSize: 40,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
             letterSpacing: -1.2,
             height: 1.1,
           ),
-          // Titulo da tela.
+          displayMedium: const TextStyle(
+            fontSize: 34,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -1,
+            height: 1.1,
+          ),
+          displaySmall: const TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.6,
+            height: 1.15,
+          ),
           headlineMedium: const TextStyle(
             fontSize: 24,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
             letterSpacing: -0.4,
             height: 1.15,
           ),
-          // Nome do cliente: o conteudo do card.
           headlineSmall: const TextStyle(
             fontSize: 19,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
             letterSpacing: -0.3,
             height: 1.2,
+          ),
+          titleLarge: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.2,
+            height: 1.25,
           ),
           titleMedium: TextStyle(
             fontSize: 15,
@@ -226,7 +278,6 @@ abstract final class AppTheme {
             color: soft,
             height: 1.3,
           ),
-          // Rotulo de secao.
           titleSmall: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
@@ -254,6 +305,11 @@ abstract final class AppTheme {
           labelMedium: const TextStyle(
             fontSize: 12.5,
             fontWeight: FontWeight.w600,
+          ),
+          labelSmall: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.4,
           ),
         )
         .apply(bodyColor: ink, displayColor: ink);

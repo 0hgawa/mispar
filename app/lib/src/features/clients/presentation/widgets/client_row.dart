@@ -12,8 +12,8 @@ class ClientRow extends StatelessWidget {
   const new({
     required this.name,
     required this.detail,
-    required this.trailing,
     required this.onTap,
+    this.trailing,
     this.detailLines = 2,
     super.key,
   });
@@ -21,8 +21,9 @@ class ClientRow extends StatelessWidget {
   final String name;
   final String detail;
 
-  /// O que fica à direita: há quanto tempo veio, ou um botão.
-  final Widget trailing;
+  /// O que fica à direita, quando há. Na aba de Clientes não há: nome e
+  /// anotação bastam, e o resto é ruído numa lista que se lê de cima a baixo.
+  final Widget? trailing;
   final VoidCallback onTap;
 
   /// Anotação de cliente pode ter duas linhas; um detalhe de uma linha só
@@ -55,15 +56,18 @@ class ClientRow extends StatelessWidget {
                   detail,
                   maxLines: detailLines,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  // `bodySmall`, que é o posto do metadado — e não
+                  // `bodyMedium`, que é texto corrente. Com 15 embaixo de 19 a
+                  // segunda linha quase empatava com o nome; com 13 ela vira
+                  // apoio, e o nome volta a mandar no cartão.
+                  style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 10),
-          trailing,
+          if (trailing != null) ...[const SizedBox(width: 10), trailing!],
         ],
       ),
     );

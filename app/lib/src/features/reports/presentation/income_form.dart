@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:marcos_barber/src/core/theme/app_colors.dart';
+import 'package:marcos_barber/src/core/theme/status_colors.dart';
 import 'package:marcos_barber/src/features/agenda/data/agenda_repository.dart';
+import 'package:marcos_barber/src/features/agenda/data/shop_settings_repository.dart';
+import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
 import 'package:marcos_barber/src/features/agenda/domain/payment_method.dart';
 import 'package:marcos_barber/src/features/clients/domain/client.dart';
 import 'package:marcos_barber/src/features/clients/presentation/clients_view_model.dart';
 import 'package:marcos_barber/src/features/services/data/service_repository.dart';
 import 'package:marcos_barber/src/features/services/domain/service.dart';
+import 'package:marcos_barber/src/shared/formatters/money.dart';
 import 'package:marcos_barber/src/shared/task_route.dart';
 import 'package:marcos_barber/src/shared/widgets/app_sheet.dart';
 import 'package:marcos_barber/src/shared/widgets/app_snack.dart';
 import 'package:marcos_barber/src/shared/widgets/bottom_action.dart';
+import 'package:marcos_barber/src/shared/widgets/confirm.dart';
 import 'package:marcos_barber/src/shared/widgets/day_button.dart';
 import 'package:marcos_barber/src/shared/widgets/initials_avatar.dart';
 import 'package:marcos_barber/src/shared/widgets/screen_title.dart';
@@ -33,10 +38,18 @@ final _catalogueProvider = StreamProvider<List<Service>>(
 /// cadastrado, e exigir o nome ali faria o lançamento não acontecer — que é
 /// exatamente o problema que esta tela resolve.
 class IncomeForm extends ConsumerStatefulWidget {
-  const new({super.key});
+  const new({this.entry, super.key});
 
-  static Future<void> show(BuildContext context) {
-    return openTask(context, (_) => const IncomeForm());
+  /// O lançamento sendo corrigido. Nulo quando é um novo.
+  final Appointment? entry;
+
+  /// Abre em tela cheia, com o X no canto — o mesmo componente da despesa.
+  ///
+  /// Corrigir receita e corrigir despesa são a mesma tarefa; usar folha de
+  /// baixo de um lado e tela cheia do outro era o app falando duas línguas
+  /// para dizer a mesma coisa.
+  static Future<void> show(BuildContext context, {Appointment? entry}) {
+    return openTask(context, (_) => IncomeForm(entry: entry));
   }
 
   @override
@@ -44,13 +57,17 @@ class IncomeForm extends ConsumerStatefulWidget {
 }
 
 class _IncomeFormState extends ConsumerState<IncomeForm> {
-  final _amount = TextEditingController();
+  late final _amount = TextEditingController(
+    text: widget.entry == null ? '' : '${widget.entry!.priceCents ~/ 100}',
+  );
 
-  Service? _service;
-  PaymentMethod? _paidWith;
-  Client? _client;
-  DateTime _at = DateTime.now();
+  late Service? _service = widget.entry?.service;
+  late PaymentMethod? _paidWith = widget.entry?.paidWith;
+  late Client? _client = widget.entry?.client;
+  late DateTime _at = widget.entry?.startsAt ?? DateTime.now();
   bool _saving = false;
+
+  bool get _isEditing => widget.entry != null;
 
   /// Valor, serviço e forma de pagamento. A forma de pagamento entra na conta
   /// porque é aqui que ela é mais fácil de perder: o dinheiro já está na mão.
@@ -70,11 +87,14 @@ class _IncomeFormState extends ConsumerState<IncomeForm> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final catalogue = ref.watch(_catalogueProvider).value ?? const <Service>[];
+    // So o que a barbearia aceita: maquininha que nao existe nao vira pilula.
+    final accepted =
+        ref.watch(acceptedPaymentsProvider).value ?? PaymentMethod.values;
     final services = catalogue.where((item) => !item.isProduct).toList();
     final products = catalogue.where((item) => item.isProduct).toList();
 
     return Scaffold(
-      appBar: const TaskBar(title: 'Lançar receita'),
+      appBar: TaskBar(title: _isEditing ? 'Lançamento' : 'Lançar receita'),
       body: ListView(
         padding: const EdgeInsets.only(bottom: Dimens.gapLarge),
         children: [
@@ -97,20 +117,20 @@ class _IncomeFormState extends ConsumerState<IncomeForm> {
             ),
             child: TextField(
               controller: _amount,
-              autofocus: true,
+              // Corrigindo, o valor ja esta la: abrir o teclado por cima dele
+              // esconderia o resto do que se veio conferir.
+              autofocus: !_isEditing,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               onChanged: (_) => setState(() {}),
-              style: theme.textTheme.headlineMedium?.copyWith(fontSize: 34),
+              style: theme.textTheme.displayMedium,
               decoration: InputDecoration(
                 hintText: '0',
                 prefixText: r'R$ ',
-                prefixStyle: theme.textTheme.headlineMedium?.copyWith(
-                  fontSize: 34,
+                prefixStyle: theme.textTheme.displayMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
-                hintStyle: theme.textTheme.headlineMedium?.copyWith(
-                  fontSize: 34,
+                hintStyle: theme.textTheme.displayMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
                 filled: true,
@@ -161,7 +181,7 @@ class _IncomeFormState extends ConsumerState<IncomeForm> {
               spacing: Dimens.gapSmall,
               runSpacing: Dimens.gapSmall,
               children: [
-                for (final method in PaymentMethod.values)
+                for (final method in accepted)
                   ChoiceChip(
                     label: Text(method.label),
                     selected: method == _paidWith,
@@ -181,6 +201,25 @@ class _IncomeFormState extends ConsumerState<IncomeForm> {
               onClear: () => setState(() => _client = null),
             ),
           ),
+          if (_isEditing)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                Dimens.screenGutter,
+                Dimens.gapLarge,
+                Dimens.screenGutter,
+                0,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: _delete,
+                  style: TextButton.styleFrom(
+                    foregroundColor: theme.status.alert,
+                  ),
+                  child: const Text('Apagar lançamento'),
+                ),
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: BottomAction(
@@ -192,7 +231,7 @@ class _IncomeFormState extends ConsumerState<IncomeForm> {
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Lançar'),
+              : Text(_isEditing ? 'Salvar' : 'Lançar'),
         ),
       ),
     );
@@ -240,25 +279,58 @@ class _IncomeFormState extends ConsumerState<IncomeForm> {
     setState(() => _saving = true);
     final service = _service!;
 
+    final repository = ref.read(agendaRepositoryProvider);
+    final cents = (int.tryParse(_amount.text) ?? 0) * 100;
+
     try {
-      await ref
-          .read(agendaRepositoryProvider)
-          .lance(
-            id: const Uuid().v4(),
-            clientId: _client?.id,
-            service: service,
-            at: _at,
-            priceCents: (int.tryParse(_amount.text) ?? 0) * 100,
-            paidWith: _paidWith!,
-          );
+      final entry = widget.entry;
+      if (entry == null) {
+        await repository.lance(
+          id: const Uuid().v4(),
+          clientId: _client?.id,
+          service: service,
+          at: _at,
+          priceCents: cents,
+          paidWith: _paidWith!,
+        );
+      } else {
+        await repository.editLance(
+          id: entry.id,
+          clientId: _client?.id,
+          service: service,
+          at: _at,
+          priceCents: cents,
+          paidWith: _paidWith!,
+        );
+      }
 
       if (!mounted) return;
       Navigator.of(context).pop();
     } on Object {
       if (!mounted) return;
       setState(() => _saving = false);
-      showSnack(context, 'Não consegui lançar. Tente de novo.');
+      showSnack(context, 'Não consegui salvar. Tente de novo.');
     }
+  }
+
+  /// Apagar, como na despesa: lançamento repetido não se conserta editando.
+  Future<void> _delete() async {
+    final entry = widget.entry!;
+    final confirmed = await askToConfirm(
+      context,
+      title: 'Apagar lançamento?',
+      message:
+          '${formatMoney(entry.priceCents)} em ${entry.service.name} '
+          'saem do Caixa. Não dá para desfazer.',
+      confirmLabel: 'Apagar',
+    );
+
+    if (!confirmed || !mounted) return;
+    await ref.read(agendaRepositoryProvider).delete(entry.id);
+
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    showSnack(context, 'Lançamento apagado.');
   }
 }
 
@@ -377,27 +449,33 @@ class _ClientPickerState extends ConsumerState<_ClientPicker> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        TextField(
-          controller: _search,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          onChanged: (term) => setState(() => _term = term),
-          decoration: InputDecoration(
-            hintText: 'Buscar por nome ou telefone',
-            hintStyle: theme.textTheme.bodyMedium?.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
-            prefixIcon: Icon(
-              Symbols.search_rounded,
-              weight: 500,
-              color: colors.onSurfaceVariant,
-            ),
-            filled: true,
-            fillColor: colors.secondaryContainer,
-            contentPadding: const EdgeInsets.symmetric(vertical: 14),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(Dimens.pillRadius),
-              borderSide: BorderSide.none,
+        // A folha recua só o título; o que vem no corpo dela se vira. Sem esta
+        // margem o campo encostava nas duas bordas e o retrato do primeiro
+        // cliente saía cortado pela lateral.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Dimens.screenGutter),
+          child: TextField(
+            controller: _search,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            onChanged: (term) => setState(() => _term = term),
+            decoration: InputDecoration(
+              hintText: 'Buscar por nome ou telefone',
+              hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+              prefixIcon: Icon(
+                Symbols.search_rounded,
+                weight: 500,
+                color: colors.onSurfaceVariant,
+              ),
+              filled: true,
+              fillColor: colors.secondaryContainer,
+              contentPadding: const EdgeInsets.symmetric(vertical: 14),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(Dimens.pillRadius),
+                borderSide: BorderSide.none,
+              ),
             ),
           ),
         ),
@@ -409,7 +487,11 @@ class _ClientPickerState extends ConsumerState<_ClientPicker> {
             itemBuilder: (context, index) {
               final client = clients[index].client;
               return ListTile(
-                contentPadding: EdgeInsets.zero,
+                // No item, e não na lista: assim o toque continua pegando a
+                // linha inteira, de borda a borda.
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: Dimens.screenGutter,
+                ),
                 leading: InitialsAvatar(name: client.name, size: 40),
                 title: Text(client.name, style: theme.textTheme.bodyLarge),
                 onTap: () => Navigator.of(context).pop(client),

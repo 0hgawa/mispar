@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,8 @@ import 'package:marcos_barber/src/core/theme/app_colors.dart';
 import 'package:marcos_barber/src/core/theme/status_colors.dart';
 import 'package:marcos_barber/src/features/reports/domain/cash_csv.dart';
 import 'package:marcos_barber/src/features/reports/presentation/cash_view_model.dart';
+import 'package:marcos_barber/src/features/reports/presentation/expense_form.dart';
+import 'package:marcos_barber/src/features/reports/presentation/income_form.dart';
 import 'package:marcos_barber/src/features/reports/presentation/widgets/cash_period_picker.dart';
 import 'package:marcos_barber/src/features/reports/presentation/widgets/profit_chart.dart';
 import 'package:marcos_barber/src/shared/formatters/money.dart';
@@ -31,10 +34,14 @@ class CashScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
+      floatingActionButton: const _RecordButton(),
       body: SafeArea(
         bottom: false,
         child: ListView(
-          padding: const EdgeInsets.only(bottom: Dimens.gapLarge),
+          padding: const EdgeInsets.only(
+            // Espaco para o botao redondo nao tapar o fim do grafico.
+            bottom: 88,
+          ),
           children: const [
             _Header(),
             SizedBox(height: Dimens.gapLarge),
@@ -157,7 +164,7 @@ class _Left extends ConsumerWidget {
             formatMoney(left.abs()),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.displaySmall?.copyWith(
+            style: theme.textTheme.displayLarge?.copyWith(
               color: left >= 0
                   ? theme.colorScheme.onSurface
                   : theme.status.alert,
@@ -227,6 +234,148 @@ class _AgainstLastPeriod extends ConsumerWidget {
   }
 }
 
+/// Lançar dinheiro sem precisar entrar na porta antes.
+///
+/// O botão redondo é o mesmo de todas as abas, no mesmo canto. Nesta ele tem
+/// duas saídas, porque o Caixa tem dois lados — e as duas abrem **em cima
+/// dele**, que é onde o dedo já está. Folha de baixo aqui seria modal: cobre a
+/// tela inteira para oferecer duas linhas.
+///
+/// Antes, lançar exigia entrar em Entrou ou em Saiu primeiro, e do painel não
+/// dava para saber que aquele era o caminho.
+class _RecordButton extends StatefulWidget {
+  const new();
+
+  /// Largura da faixa onde as pílulas se alinham, dita e não deduzida.
+  ///
+  /// É ela que encosta a borda direita das pílulas na borda direita do botão:
+  /// o recuo do menu é `largura do botão − esta`. Sem um número aqui, o
+  /// Material mede o item mais largo e empurra tudo até a borda da tela.
+  static const _menuWidth = 220.0;
+
+  /// O tamanho do botão redondo padrão do Material.
+  static const _buttonWidth = 56.0;
+
+  @override
+  State<_RecordButton> createState() => _RecordButtonState();
+}
+
+class _RecordButtonState extends State<_RecordButton> {
+  final _menu = MenuController();
+
+  @override
+  Widget build(BuildContext context) {
+    return MenuAnchor(
+      controller: _menu,
+      // Sem recorte. O painel do Material corta no próprio retângulo, e como
+      // as pílulas ocupam ele inteiro, o que sobrava para fora — a sombra e o
+      // arredondado de baixo — saía chanfrado, como se a pílula estivesse
+      // cortada.
+      clipBehavior: Clip.none,
+      // As opções saem **do** botão: mesma borda direita, empilhadas por cima
+      // dele. Encostado na barra de baixo o menu não cabe abaixo do botão, e o
+      // Material o vira para cima sozinho.
+      alignmentOffset: const Offset(
+        _RecordButton._buttonWidth - _RecordButton._menuWidth,
+        Dimens.gapSmall,
+      ),
+      // Sem folha em volta: no FAB Menu do M3 cada opção é uma pílula solta, e
+      // não linha de um cartão. O painel do Material continua fazendo o que
+      // interessa — abrir, posicionar e fechar ao tocar fora —, só que
+      // invisível.
+      style: const MenuStyle(
+        backgroundColor: WidgetStatePropertyAll(Colors.transparent),
+        shadowColor: WidgetStatePropertyAll(Colors.transparent),
+        surfaceTintColor: WidgetStatePropertyAll(Colors.transparent),
+        elevation: WidgetStatePropertyAll(0),
+        padding: WidgetStatePropertyAll(EdgeInsets.zero),
+      ),
+      menuChildren: [
+        _RecordPill(
+          icon: Symbols.add_rounded,
+          label: 'Entrou dinheiro',
+          onTap: () => _open(IncomeForm.show),
+        ),
+        const SizedBox(height: Dimens.gapSmall),
+        _RecordPill(
+          icon: Symbols.remove_rounded,
+          label: 'Saiu dinheiro',
+          onTap: () => _open(ExpenseForm.show),
+        ),
+      ],
+      builder: (context, controller, child) => FloatingActionButton(
+        onPressed: controller.isOpen ? controller.close : controller.open,
+        tooltip: 'Lançar dinheiro',
+        child: AnimatedRotation(
+          // O mesmo `+` virando `×`: é o botão que abriu, e é ele que fecha.
+          turns: controller.isOpen ? 0.125 : 0,
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+          child: const Icon(Symbols.add_rounded, weight: 600, size: 28),
+        ),
+      ),
+    );
+  }
+
+  /// Fecha o menu antes de abrir o formulário: pílula não é item de menu, e
+  /// ninguém fecha por ela.
+  void _open(Future<void> Function(BuildContext context) form) {
+    _menu.close();
+    unawaited(form(context));
+  }
+}
+
+/// Uma opção do botão redondo, do tamanho do que ela diz.
+class _RecordPill extends StatelessWidget {
+  const new({required this.icon, required this.label, required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SizedBox(
+      width: _RecordButton._menuWidth,
+      // Cada pílula tem a largura do próprio texto, e as duas encostam a
+      // borda direita na do botão. É assim no FAB Menu do M3: pílula é do
+      // tamanho do que ela diz, e não de uma faixa.
+      //
+      // A faixa de 220 continua existindo por baixo, invisível, só para
+      // alinhar as bordas — é a caixa do menu, e tocar na caixa de um menu
+      // sem acertar um item não faz nada mesmo.
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: Material(
+          color: theme.colorScheme.surfaceContainer,
+          shape: const StadiumBorder(),
+          // A mesma altura do botão que as abriu, e nem um grau a mais: a
+          // pílula sai dele, não flutua acima dele. Em 3 a sombra ficava maior
+          // que a do próprio botão, num app onde cartão nenhum tem sombra.
+          elevation: 2,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, weight: 600, size: 22),
+                  const SizedBox(width: 10),
+                  Text(label, style: theme.textTheme.labelLarge),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Os dois lados da conta, cada um a uma porta de distancia.
 class _Doors extends ConsumerWidget {
   const new();
@@ -237,9 +386,9 @@ class _Doors extends ConsumerWidget {
     final spent = ref.watch(spentReportProvider).value;
 
     final served = report?.servedCount ?? 0;
-    final booked = report?.bookedCount ?? 0;
     final expected = report?.expectedCents ?? 0;
     final lanced = spent?.expenses.length ?? 0;
+    final fixed = spent?.fixedCents ?? 0;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Dimens.screenGutter),
@@ -253,9 +402,12 @@ class _Doors extends ConsumerWidget {
                 cents: report?.earnedCents ?? 0,
                 // O que esta marcado e a noticia mais util deste lado: e o que
                 // ainda pode entrar antes do periodo fechar.
+                //
+                // Uma linha so, e so dinheiro: com "em 14 horarios" junto, a
+                // nota quebrava em duas e o par de cartoes ficava torto — um
+                // alto, outro baixo. A contagem esta a um toque, dentro.
                 note: expected > 0
-                    ? '+ ${formatMoney(expected)} a receber, em $booked '
-                          '${booked == 1 ? 'horário' : 'horários'}'
+                    ? '+ ${formatMoney(expected)} a receber'
                     : served == 1
                     ? '1 atendimento'
                     : '$served atendimentos',
@@ -267,7 +419,15 @@ class _Doors extends ConsumerWidget {
               child: _Door(
                 label: 'Saiu',
                 cents: spent?.totalCents ?? 0,
-                note: lanced == 1 ? '1 lançamento' : '$lanced lançamentos',
+                // Quanto disto volta no mês que vem é a notícia deste lado —
+                // o espelho do "a receber" do outro. A contagem de
+                // lançamentos só aparece quando não há nada fixo: ela não diz
+                // nada que abrir a tela não diga melhor.
+                note: fixed > 0
+                    ? '${formatMoney(fixed)} todo mês'
+                    : lanced == 1
+                    ? '1 lançamento'
+                    : '$lanced lançamentos',
                 onTap: () => context.push(Routes.spent),
               ),
             ),
@@ -324,15 +484,17 @@ class _Door extends StatelessWidget {
             formatMoney(cents),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontSize: 26,
-              letterSpacing: -0.5,
+            style: theme.textTheme.displaySmall?.copyWith(
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
           const SizedBox(height: 4),
           Text(
             note,
+            // Uma linha, cortada com reticência: nota comprida crescendo para
+            // baixo desalinha o par, e os dois cartões deixam de ser um par.
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
               color: colors.onSurfaceVariant,
             ),

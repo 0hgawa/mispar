@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 /// mesma regra por outro caminho; esta função é para as que são empilhadas na
 /// mão.
 Future<void> openTask(BuildContext context, WidgetBuilder builder) {
-  return Navigator.of(context, rootNavigator: true)
-      .push(MaterialPageRoute<void>(builder: builder));
+  return Navigator.of(
+    context,
+    rootNavigator: true,
+  ).push(MaterialPageRoute<void>(builder: builder));
 }

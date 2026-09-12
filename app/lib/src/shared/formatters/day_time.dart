@@ -58,9 +58,11 @@ String formatTimeAgo(DateTime moment) {
 /// hoje.
 String formatDayHeading(DateTime day, {DateTime? now}) {
   final today = now ?? DateTime.now();
-  final days = DateTime(today.year, today.month, today.day)
-      .difference(DateTime(day.year, day.month, day.day))
-      .inDays;
+  final days = DateTime(
+    today.year,
+    today.month,
+    today.day,
+  ).difference(DateTime(day.year, day.month, day.day)).inDays;
 
   return switch (days) {
     0 => 'Hoje',

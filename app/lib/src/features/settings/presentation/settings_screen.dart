@@ -40,6 +40,18 @@ class SettingsScreen extends StatelessWidget {
               onTap: () => context.push(Routes.reminder),
             ),
             _Entry(
+              icon: Symbols.payments_rounded,
+              title: 'Pagamento',
+              detail: 'O que a barbearia aceita receber',
+              onTap: () => context.push(Routes.payments),
+            ),
+            _Entry(
+              icon: Symbols.person_alert_rounded,
+              title: 'Sumiram',
+              detail: 'Quando avisar que um cliente parou de vir',
+              onTap: () => context.push(Routes.driftedRule),
+            ),
+            _Entry(
               icon: Symbols.receipt_long_rounded,
               title: 'Tipos de despesa',
               detail: 'Onde o dinheiro da barbearia sai',

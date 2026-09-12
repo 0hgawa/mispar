@@ -6,11 +6,13 @@ import 'package:go_router/go_router.dart';
 import 'package:marcos_barber/src/core/router/app_router.dart';
 import 'package:marcos_barber/src/core/theme/app_colors.dart';
 import 'package:marcos_barber/src/core/theme/status_colors.dart';
+import 'package:marcos_barber/src/features/agenda/data/shop_settings_repository.dart';
 import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
 import 'package:marcos_barber/src/features/clients/domain/win_back.dart';
 import 'package:marcos_barber/src/features/clients/presentation/clients_view_model.dart';
 import 'package:marcos_barber/src/features/clients/presentation/import_contacts_screen.dart';
 import 'package:marcos_barber/src/features/clients/presentation/widgets/client_card.dart';
+import 'package:marcos_barber/src/features/settings/domain/drifted_rule.dart';
 import 'package:marcos_barber/src/shared/formatters/money.dart';
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
 import 'package:marcos_barber/src/shared/widgets/empty_state.dart';
@@ -108,16 +110,18 @@ class _Header extends StatelessWidget {
 /// Faixa tingida e não card: o que vem abaixo é uma lista de cards de cliente,
 /// e mais um card seria lido como mais um cliente. Some quando não há ninguém
 /// sumido — aviso permanente de coisa nenhuma vira papel de parede.
-class _DriftedBanner extends StatelessWidget {
+class _DriftedBanner extends ConsumerWidget {
   const new({required this.all});
 
   final List<ClientSummary> all;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final alert = theme.status.alert;
-    final drifted = winBackList(all);
+    final rule =
+        ref.watch(driftedRuleProvider).value ?? const DriftedRule.unknown();
+    final drifted = winBackList(all, rule);
     if (drifted.isEmpty) return const SizedBox.shrink();
 
     final value = formatMoney(winBackValueCents(drifted));

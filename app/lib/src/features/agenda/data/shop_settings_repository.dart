@@ -1,7 +1,10 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:marcos_barber/src/core/data/database/app_database.dart';
+import 'package:marcos_barber/src/features/agenda/domain/payment_method.dart';
 import 'package:marcos_barber/src/features/agenda/domain/shop_hours.dart';
+import 'package:marcos_barber/src/features/settings/domain/accepted_payments.dart';
+import 'package:marcos_barber/src/features/settings/domain/drifted_rule.dart';
 import 'package:marcos_barber/src/features/settings/domain/reminder_settings.dart';
 
 /// O que se ajusta uma vez e vale para a barbearia inteira.
@@ -69,6 +72,53 @@ class ShopSettingsRepository {
           ),
         );
   }
+
+  /// Quando um cliente conta como sumido.
+  Stream<DriftedRule> watchDrifted() {
+    final query = _db.select(_db.shopSettings)
+      ..where((s) => s.id.equals(_theRow));
+
+    return query.watchSingleOrNull().map(
+      (row) => row == null
+          ? const DriftedRule.unknown()
+          : DriftedRule(isOn: row.driftedEnabled, days: row.driftedDays),
+    );
+  }
+
+  /// As formas de pagamento que a barbearia aceita.
+  Stream<List<PaymentMethod>> watchAcceptedPayments() {
+    final query = _db.select(_db.shopSettings)
+      ..where((s) => s.id.equals(_theRow));
+
+    return query.watchSingleOrNull().map(
+      (row) => AcceptedPayments.read(
+        row?.acceptedPayments ?? AcceptedPayments.wireDefault,
+      ),
+    );
+  }
+
+  Future<void> saveAcceptedPayments(List<PaymentMethod> accepted) {
+    return _db
+        .into(_db.shopSettings)
+        .insertOnConflictUpdate(
+          ShopSettingsCompanion.insert(
+            id: const Value(_theRow),
+            acceptedPayments: Value(AcceptedPayments.write(accepted)),
+          ),
+        );
+  }
+
+  Future<void> saveDrifted(DriftedRule rule) {
+    return _db
+        .into(_db.shopSettings)
+        .insertOnConflictUpdate(
+          ShopSettingsCompanion.insert(
+            id: const Value(_theRow),
+            driftedEnabled: Value(rule.isOn),
+            driftedDays: Value(rule.days),
+          ),
+        );
+  }
 }
 
 final shopSettingsRepositoryProvider = Provider<ShopSettingsRepository>(
@@ -85,4 +135,17 @@ final slotStepProvider = StreamProvider<Duration>((ref) {
 /// "ligado" por um instante seria mentir sobre uma coisa que cobra.
 final reminderSettingsProvider = StreamProvider<ReminderSettings>((ref) {
   return ref.watch(shopSettingsRepositoryProvider).watchReminder();
+});
+
+/// Quando um cliente conta como sumido. Calado enquanto o banco não respondeu
+/// — quem desligou o aviso não pode vê-lo piscar a cada abertura.
+final driftedRuleProvider = StreamProvider<DriftedRule>((ref) {
+  return ref.watch(shopSettingsRepositoryProvider).watchDrifted();
+});
+
+/// O que a barbearia aceita receber. As três enquanto o banco não respondeu:
+/// é o valor de fábrica, e esconder uma forma que existe é pior que mostrar
+/// uma que já foi desligada por meio segundo.
+final acceptedPaymentsProvider = StreamProvider<List<PaymentMethod>>((ref) {
+  return ref.watch(shopSettingsRepositoryProvider).watchAcceptedPayments();
 });

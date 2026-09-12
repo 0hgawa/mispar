@@ -2,6 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marcos_barber/src/features/clients/domain/client.dart';
 import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
 import 'package:marcos_barber/src/features/clients/domain/win_back.dart';
+import 'package:marcos_barber/src/features/settings/domain/drifted_rule.dart';
+
+const _ligado = DriftedRule(isOn: true, days: 30);
+const _desligado = DriftedRule(isOn: false, days: 30);
 
 ClientSummary _summary({
   required String name,
@@ -27,21 +31,45 @@ ClientSummary _summary({
 void main() {
   group('winBackList', () {
     test('quem veio esta semana nao entra', () {
-      final lista = winBackList([_summary(name: 'Rafael', daysAgo: 5)]);
+      final lista = winBackList([
+        _summary(name: 'Rafael', daysAgo: 5),
+      ], _ligado);
 
       expect(lista, isEmpty);
     });
 
-    test('quem passou de 45 dias entra', () {
-      final lista = winBackList([_summary(name: 'Rafael', daysAgo: 60)]);
+    test('quem passou do prazo entra', () {
+      final lista = winBackList([
+        _summary(name: 'Rafael', daysAgo: 60),
+      ], _ligado);
 
       expect(lista.single.client.name, 'Rafael');
+    });
+
+    test('com o aviso desligado a lista e vazia', () {
+      final lista = winBackList([
+        _summary(name: 'Rafael', daysAgo: 60),
+      ], _desligado);
+
+      expect(lista, isEmpty);
+    });
+
+    test('o prazo manda: 45 dias entra com 30, nao com 90', () {
+      final agenda = [_summary(name: 'Rafael', daysAgo: 45)];
+
+      expect(winBackList(agenda, const DriftedRule(isOn: true, days: 30)), [
+        isA<ClientSummary>(),
+      ]);
+      expect(
+        winBackList(agenda, const DriftedRule(isOn: true, days: 90)),
+        isEmpty,
+      );
     });
 
     test('quem foi tirado da lista nao entra', () {
       final lista = winBackList([
         _summary(name: 'Rafael', daysAgo: 60, isActive: false),
-      ]);
+      ], _ligado);
 
       expect(lista, isEmpty);
     });
@@ -53,7 +81,7 @@ void main() {
           visitCount: 0,
           spentCents: 0,
         ),
-      ]);
+      ], _ligado);
 
       expect(lista, isEmpty);
     });
@@ -63,7 +91,7 @@ void main() {
         _summary(name: 'Corte', daysAgo: 300, spentCents: 3000),
         _summary(name: 'Platinado', daysAgo: 50, spentCents: 24000),
         _summary(name: 'Barba', daysAgo: 90, spentCents: 9000),
-      ]);
+      ], _ligado);
 
       expect(lista.map((s) => s.client.name), ['Platinado', 'Barba', 'Corte']);
     });
@@ -74,7 +102,7 @@ void main() {
       _summary(name: 'A', daysAgo: 60, spentCents: 12000),
       _summary(name: 'B', daysAgo: 60, spentCents: 3000),
       _summary(name: 'C', daysAgo: 5, spentCents: 99900),
-    ]);
+    ], _ligado);
 
     expect(winBackValueCents(lista), 15000);
   });

@@ -21,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
   new() : super(driftDatabase(name: 'marcos_barber'));
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -62,6 +62,26 @@ class AppDatabase extends _$AppDatabase {
       if (from < 13) {
         await m.addColumn(shopSettings, shopSettings.reminderEnabled);
         await m.addColumn(shopSettings, shopSettings.reminderHoursBefore);
+      }
+      // v14: o prazo de "sumiu" virou ajuste, e ganhou interruptor.
+      if (from < 14) {
+        await m.addColumn(shopSettings, shopSettings.driftedEnabled);
+        await m.addColumn(shopSettings, shopSettings.driftedDays);
+      }
+      // v15: as formas de pagamento aceitas viraram ajuste.
+      if (from < 15) {
+        await m.addColumn(shopSettings, shopSettings.acceptedPayments);
+      }
+      // v16: lancamento de balcao passou a se declarar, em vez de ser
+      // adivinhado pela falta de cliente.
+      if (from < 16) {
+        await m.addColumn(appointments, appointments.walkIn);
+        // O que ja estava gravado sem cliente era lancamento de balcao: era
+        // assim que o app reconhecia um ate agora. Sem isto, tudo que foi
+        // lancado antes desta versao deixaria de abrir para corrigir.
+        await customStatement(
+          'update appointments set walk_in = 1 where client_id is null',
+        );
       }
     },
     beforeOpen: (details) async {

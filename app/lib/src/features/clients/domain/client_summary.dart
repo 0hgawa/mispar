@@ -23,13 +23,16 @@ class ClientSummary {
 
   int get averageTicketCents => visitCount == 0 ? 0 : spentCents ~/ visitCount;
 
-  /// Sumiu: passou de 45 dias sem aparecer, tendo vindo antes.
+  /// Sumiu: passou de [days] sem aparecer, tendo vindo antes.
   ///
   /// E o cliente que da para trazer de volta com uma mensagem — o mais barato
   /// que existe, porque ele ja conhece a barbearia.
-  bool get hasDrifted {
+  ///
+  /// O prazo vem de fora porque e ajuste da barbearia: o ritmo de quem corta
+  /// a cada quinze dias nao e o de quem corta a cada dois meses.
+  bool hasDriftedAfter(int days) {
     final last = lastVisit;
     if (last == null) return false;
-    return DateTime.now().difference(last).inDays > 45;
+    return DateTime.now().difference(last).inDays > days;
   }
 }

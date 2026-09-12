@@ -125,6 +125,22 @@ class ShopSettings extends Table {
   IntColumn get reminderHoursBefore =>
       integer().withDefault(const Constant(24))();
 
+  /// Avisar quando um cliente para de vir.
+  ///
+  /// Só existe no aparelho: quem lê é a lista de clientes, e o robô do
+  /// WhatsApp não tem nada a ver com isso.
+  BoolColumn get driftedEnabled =>
+      boolean().withDefault(const Constant(true))();
+
+  /// Quantos dias sem aparecer contam como sumido.
+  IntColumn get driftedDays => integer().withDefault(const Constant(60))();
+
+  /// As formas de pagamento aceitas, separadas por vírgula.
+  ///
+  /// Texto e não três colunas: uma quarta forma um dia não vira migração.
+  TextColumn get acceptedPayments =>
+      text().withDefault(const Constant('cash,pix,card'))();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }
@@ -169,6 +185,13 @@ class Appointments extends Table {
   /// Nome do valor de PaymentMethod. Nulo enquanto ninguem anotou: sem isto
   /// nao da para conferir a maquininha contra o que o dia rendeu.
   TextColumn get paymentMethod => text().nullable()();
+
+  /// Digitado direto no Caixa, sem ter passado pela agenda.
+  ///
+  /// Coluna, e nao "sem cliente": o balcao tambem se cadastra, e quem lancou
+  /// com nome continua tendo lancamento para corrigir. Sem isto, escolher o
+  /// cliente trancava a edicao do proprio lancamento.
+  BoolColumn get walkIn => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};

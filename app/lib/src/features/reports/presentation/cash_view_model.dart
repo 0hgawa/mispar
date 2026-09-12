@@ -157,7 +157,6 @@ class CashReport {
     required this.lostCents,
     required this.servedCount,
     required this.soldCount,
-    required this.bookedCount,
     required this.noShowCount,
     required this.entries,
   });
@@ -177,7 +176,6 @@ class CashReport {
   final int servedCount;
 
   final int soldCount;
-  final int bookedCount;
   final int noShowCount;
 
   /// Os atendimentos que formam o total, do mais recente para o mais antigo.
@@ -301,7 +299,6 @@ Stream<CashReport> cashReport(Ref ref) {
         var lost = 0;
         var served = 0;
         var sold = 0;
-        var booked = 0;
         var noShows = 0;
         final entries = <Appointment>[];
 
@@ -324,7 +321,6 @@ Stream<CashReport> cashReport(Ref ref) {
                 AppointmentStatus.confirmed ||
                 AppointmentStatus.depositPaid:
               expected += price;
-              booked++;
             // Desmarcado a tempo nao e perda: o horario voltou para a agenda.
             case AppointmentStatus.cancelled:
               break;
@@ -337,7 +333,6 @@ Stream<CashReport> cashReport(Ref ref) {
           lostCents: lost,
           servedCount: served,
           soldCount: sold,
-          bookedCount: booked,
           noShowCount: noShows,
           entries: entries.reversed.toList(growable: false),
         );

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:marcos_barber/src/core/theme/app_colors.dart';
 import 'package:marcos_barber/src/core/theme/status_colors.dart';
+import 'package:marcos_barber/src/features/agenda/data/shop_settings_repository.dart';
 import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
 import 'package:marcos_barber/src/features/clients/data/client_repository.dart';
 import 'package:marcos_barber/src/features/clients/domain/client.dart';
 import 'package:marcos_barber/src/features/clients/domain/client_summary.dart';
 import 'package:marcos_barber/src/features/clients/presentation/clients_view_model.dart';
 import 'package:marcos_barber/src/features/clients/presentation/widgets/note_editor.dart';
+import 'package:marcos_barber/src/features/settings/domain/drifted_rule.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/formatters/money.dart';
 import 'package:marcos_barber/src/shared/whatsapp.dart';
@@ -180,14 +182,16 @@ class _DangerZone extends ConsumerWidget {
 
 /// Os tres numeros que o Marcos usa para decidir: quanto rende, com que
 /// frequencia volta, e quando foi a ultima vez.
-class _Numbers extends StatelessWidget {
+class _Numbers extends ConsumerWidget {
   const new({required this.summary});
 
   final ClientSummary summary;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final lastVisit = summary.lastVisit;
+    final rule =
+        ref.watch(driftedRuleProvider).value ?? const DriftedRule.unknown();
 
     return AppCard(
       child: Row(
@@ -208,7 +212,7 @@ class _Numbers extends StatelessWidget {
             child: _Number(
               value: lastVisit == null ? '—' : formatTimeAgo(lastVisit),
               label: 'última vez',
-              isAlert: summary.hasDrifted,
+              isAlert: rule.isOn && summary.hasDriftedAfter(rule.days),
             ),
           ),
         ],
@@ -235,8 +239,7 @@ class _Number extends StatelessWidget {
           value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontSize: 17,
+          style: theme.textTheme.titleLarge?.copyWith(
             color: isAlert ? theme.status.alert : theme.colorScheme.onSurface,
           ),
         ),

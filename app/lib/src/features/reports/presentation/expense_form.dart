@@ -95,16 +95,14 @@ class _ExpenseFormState extends ConsumerState<ExpenseForm> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               onChanged: (_) => setState(() {}),
-              style: theme.textTheme.headlineMedium?.copyWith(fontSize: 34),
+              style: theme.textTheme.displayMedium,
               decoration: InputDecoration(
                 hintText: '0',
                 prefixText: r'R$ ',
-                prefixStyle: theme.textTheme.headlineMedium?.copyWith(
-                  fontSize: 34,
+                prefixStyle: theme.textTheme.displayMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
-                hintStyle: theme.textTheme.headlineMedium?.copyWith(
-                  fontSize: 34,
+                hintStyle: theme.textTheme.displayMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
                 filled: true,

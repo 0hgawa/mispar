@@ -89,7 +89,7 @@ class _Body extends ConsumerWidget {
                   children: [
                     Text(
                       formatMoney(spent.totalCents),
-                      style: theme.textTheme.displaySmall,
+                      style: theme.textTheme.displayLarge,
                     ),
                     const SizedBox(height: 2),
                     Text(

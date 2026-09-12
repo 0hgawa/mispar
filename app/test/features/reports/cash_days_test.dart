@@ -30,15 +30,18 @@ void main() {
       expect(days.map((d) => d.day.day), [10, 9, 8]);
     });
 
-    test('a hora nao separa dias, e a meia-noite nao vaza para o dia de tras', () {
-      final days = _group([
-        (at: DateTime(2026, 9, 10), cents: 100),
-        (at: DateTime(2026, 9, 10, 23, 59), cents: 100),
-      ]);
+    test(
+      'a hora nao separa dias, e a meia-noite nao vaza para o dia de tras',
+      () {
+        final days = _group([
+          (at: DateTime(2026, 9, 10), cents: 100),
+          (at: DateTime(2026, 9, 10, 23, 59), cents: 100),
+        ]);
 
-      expect(days, hasLength(1));
-      expect(days.single.totalCents, 200);
-    });
+        expect(days, hasLength(1));
+        expect(days.single.totalCents, 200);
+      },
+    );
 
     test('sem lancamento nao ha dia', () {
       expect(_group(const []), isEmpty);

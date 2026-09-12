@@ -26,14 +26,15 @@ abstract class Appointment with _$Appointment {
     /// Como foi pago. Nulo enquanto o atendimento nao fechou, ou quando
     /// ninguem anotou.
     PaymentMethod? paidWith,
+
+    /// Digitado direto no Caixa, sem ter passado pela agenda. E o que decide
+    /// se tocar nele abre o formulario que o criou ou a folha do horario.
+    @Default(false) bool isWalkIn,
   }) = _Appointment;
 
   const new _();
 
   DateTime get endsAt => startsAt.add(duration);
-
-  /// Lançado direto no Caixa: entrou sem hora marcada e sem cliente.
-  bool get isWalkIn => client == null;
 
   /// Como chamar quem foi atendido. Inventar um nome seria pior que admitir
   /// que ninguém anotou.

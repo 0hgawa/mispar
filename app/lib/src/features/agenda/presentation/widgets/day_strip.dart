@@ -327,9 +327,7 @@ class _Weekdays extends StatelessWidget {
               child: Text(
                 formatShortWeekday(sunday.add(Duration(days: i))).toUpperCase(),
                 textAlign: TextAlign.center,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontSize: 11,
-                  letterSpacing: 0.6,
+                style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -425,8 +423,7 @@ class _Day extends StatelessWidget {
             ),
             child: Text(
               '${day.day}',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontSize: 17,
+              style: theme.textTheme.titleLarge?.copyWith(
                 color: isSelected
                     ? colors.surface
                     : isFaded

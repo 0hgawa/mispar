@@ -26,10 +26,7 @@ void main() {
     });
 
     test('a hora nao entra na conta', () {
-      expect(
-        startOfWeek(DateTime(2026, 9, 11, 23, 59)),
-        DateTime(2026, 9, 6),
-      );
+      expect(startOfWeek(DateTime(2026, 9, 11, 23, 59)), DateTime(2026, 9, 6));
     });
   });
 }

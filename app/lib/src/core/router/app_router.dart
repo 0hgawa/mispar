@@ -13,6 +13,8 @@ import 'package:marcos_barber/src/features/reports/presentation/earned_screen.da
 import 'package:marcos_barber/src/features/reports/presentation/expense_categories_screen.dart';
 import 'package:marcos_barber/src/features/reports/presentation/spent_screen.dart';
 import 'package:marcos_barber/src/features/services/presentation/services_screen.dart';
+import 'package:marcos_barber/src/features/settings/presentation/drifted_settings_screen.dart';
+import 'package:marcos_barber/src/features/settings/presentation/payments_screen.dart';
 import 'package:marcos_barber/src/features/settings/presentation/reminder_screen.dart';
 import 'package:marcos_barber/src/features/settings/presentation/settings_screen.dart';
 import 'package:marcos_barber/src/features/settings/presentation/shop_hours_screen.dart';
@@ -35,6 +37,8 @@ abstract final class Routes {
   static const shopHours = '$settings/horarios';
   static const expenseCategories = '$settings/despesas';
   static const reminder = '$settings/lembrete';
+  static const driftedRule = '$settings/sumiram';
+  static const payments = '$settings/pagamento';
 }
 
 final _rootNavigator = GlobalKey<NavigatorState>();
@@ -136,6 +140,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'lembrete',
                     builder: (context, state) => const ReminderScreen(),
+                  ),
+                  GoRoute(
+                    path: 'sumiram',
+                    builder: (context, state) => const DriftedSettingsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'pagamento',
+                    builder: (context, state) => const PaymentsScreen(),
                   ),
                 ],
               ),

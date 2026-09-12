@@ -80,9 +80,6 @@ abstract final class SlotRules {
   /// Vaga menor que isto nao vale a pena mostrar: nao cabe nem um pezinho.
   static const shortestUsefulGap = Duration(minutes: 15);
 
-  /// Vaga a partir daqui vale uma mensagem para a fila de espera.
-  static const gapWorthSelling = Duration(minutes: 30);
-
   /// De quanto em quanto tempo os horarios sao oferecidos. Passo curto demais
   /// vira uma lista impossivel de ler; longo demais perde encaixe de pezinho.
   static const step = Duration(minutes: 15);

@@ -40,25 +40,31 @@ void main() {
       expect(summary(visits: 4, spent: 24000).averageTicketCents, 6000);
     });
 
-    test('sumiu depois de 45 dias sem aparecer', () {
-      final antigo = DateTime.now().subtract(const Duration(days: 60));
-      expect(summary(lastVisit: antigo).hasDrifted, isTrue);
+    test('sumiu depois do prazo sem aparecer', () {
+      final antigo = DateTime.now().subtract(const Duration(days: 90));
+      expect(summary(lastVisit: antigo).hasDriftedAfter(60), isTrue);
     });
 
     test('quem veio semana passada nao sumiu', () {
       final recente = DateTime.now().subtract(const Duration(days: 7));
-      expect(summary(lastVisit: recente).hasDrifted, isFalse);
+      expect(summary(lastVisit: recente).hasDriftedAfter(60), isFalse);
     });
 
     test('quem nunca veio nao conta como sumido', () {
       // Cliente novo ainda nao teve chance de sumir — marcar em vermelho
       // seria mentira.
-      expect(summary(visits: 0, spent: 0).hasDrifted, isFalse);
+      expect(summary(visits: 0, spent: 0).hasDriftedAfter(60), isFalse);
     });
 
-    test('exatamente 45 dias ainda nao e sumico', () {
-      final limite = DateTime.now().subtract(const Duration(days: 45));
-      expect(summary(lastVisit: limite).hasDrifted, isFalse);
+    test('o dia do prazo ainda nao e sumico', () {
+      final limite = DateTime.now().subtract(const Duration(days: 60));
+      expect(summary(lastVisit: limite).hasDriftedAfter(60), isFalse);
+    });
+
+    test('quem manda e o prazo: 50 dias some com 30, nao com 60', () {
+      final meio = DateTime.now().subtract(const Duration(days: 50));
+      expect(summary(lastVisit: meio).hasDriftedAfter(30), isTrue);
+      expect(summary(lastVisit: meio).hasDriftedAfter(60), isFalse);
     });
   });
 }

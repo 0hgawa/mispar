@@ -15,20 +15,15 @@ part 'week_view_model.g.dart';
 class DayOverview {
   const new({
     required this.date,
-    required this.bookedCount,
-    required this.revenueCents,
     required this.bookedTime,
     required this.freeTime,
     required this.isToday,
     required this.isPast,
     required this.isClosed,
-    required this.gaps,
     required this.slots,
   });
 
   final DateTime date;
-  final int bookedCount;
-  final int revenueCents;
   final Duration bookedTime;
   final Duration freeTime;
   final bool isToday;
@@ -37,9 +32,6 @@ class DayOverview {
   final bool isPast;
 
   final bool isClosed;
-
-  /// As brechas do dia que ainda da para vender.
-  final List<SellableGap> gaps;
 
   /// A grade do dia inteira. E o mesmo dado da visao de Dia, so que resumido —
   /// duas formas de olhar a mesma agenda, nao duas telas diferentes.
@@ -53,21 +45,10 @@ class DayOverview {
   }
 }
 
-/// Uma vaga grande o bastante para valer uma mensagem.
-class SellableGap {
-  const new({required this.start, required this.end});
-
-  final DateTime start;
-  final DateTime end;
-
-  Duration get length => end.difference(start);
-}
-
 class WeekOverview {
-  const new({required this.days, required this.revenueCents});
+  const new({required this.days});
 
   final List<DayOverview> days;
-  final int revenueCents;
 
   Duration get bookedTime =>
       days.fold(Duration.zero, (sum, day) => sum + day.bookedTime);
@@ -113,7 +94,6 @@ Stream<WeekOverview> weekOverview(Ref ref) {
   return ref.watch(agendaRepositoryProvider).watchRange(sunday, nextSunday).map(
     (appointments) {
       final days = <DayOverview>[];
-      var revenue = 0;
 
       for (var index = 0; index < 7; index++) {
         final date = sunday.add(Duration(days: index));
@@ -126,7 +106,6 @@ Stream<WeekOverview> weekOverview(Ref ref) {
               appointment,
         ];
 
-        final gaps = <SellableGap>[];
         final slots = buildDaySchedule(
           date,
           ofDay,
@@ -138,20 +117,14 @@ Stream<WeekOverview> weekOverview(Ref ref) {
         );
         var booked = Duration.zero;
         var free = Duration.zero;
-        var earned = 0;
 
         for (final slot in slots) {
           switch (slot) {
             case BookedSlot(:final appointment):
               booked += appointment.duration;
-              earned += appointment.priceCents;
             case FreeSlot(:final start, :final end):
               final length = end.difference(start);
               free += length;
-              // Vaga no passado nao da para vender.
-              if (length >= SlotRules.gapWorthSelling && start.isAfter(now)) {
-                gaps.add(SellableGap(start: start, end: end));
-              }
             // Fechado nao e vaga nem venda: a cadeira nao estava a disposicao.
             // Contar como livre faria a ocupacao parecer pior do que foi.
             case BlockedSlot():
@@ -159,25 +132,20 @@ Stream<WeekOverview> weekOverview(Ref ref) {
           }
         }
 
-        revenue += earned;
         days.add(
           DayOverview(
             date: date,
-            bookedCount: ofDay.length,
-            revenueCents: earned,
             bookedTime: booked,
             freeTime: free,
             isToday: date == today,
             isPast: date.isBefore(today),
             isClosed: !week.on(date).isOpen,
-            // Maior primeiro: e a que vale a mensagem.
-            gaps: gaps..sort((a, b) => b.length.compareTo(a.length)),
             slots: slots,
           ),
         );
       }
 
-      return WeekOverview(days: days, revenueCents: revenue);
+      return WeekOverview(days: days);
     },
   );
 }

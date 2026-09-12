@@ -4,6 +4,7 @@ import 'package:marcos_barber/src/core/data/database/app_database.dart';
 import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
 import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
 import 'package:marcos_barber/src/features/agenda/domain/payment_method.dart';
+import 'package:marcos_barber/src/features/agenda/domain/usual_payment.dart';
 import 'package:marcos_barber/src/features/clients/domain/client.dart';
 import 'package:marcos_barber/src/features/services/domain/catalogue_kind.dart';
 import 'package:marcos_barber/src/features/services/domain/service.dart';
@@ -56,6 +57,7 @@ class AgendaRepository {
             priceCents: priceCents,
             status: AppointmentStatus.done.wireName,
             paymentMethod: Value(paidWith.name),
+            walkIn: const Value(true),
           ),
         );
   }
@@ -123,6 +125,37 @@ class AgendaRepository {
     );
   }
 
+  /// Corrige um lançamento digitado à mão.
+  ///
+  /// Só o que foi digitado se corrige por aqui: o preço de um horário marcado
+  /// é cópia do catálogo no momento da marcação, e mexer nele pelo Caixa faria
+  /// o Caixa e a agenda discordarem sobre o que foi combinado.
+  Future<void> editLance({
+    required String id,
+    required Service service,
+    required DateTime at,
+    required int priceCents,
+    required PaymentMethod paidWith,
+    String? clientId,
+  }) {
+    return (_db.update(_db.appointments)..where((a) => a.id.equals(id))).write(
+      AppointmentsCompanion(
+        clientId: Value(clientId),
+        serviceId: Value(service.id),
+        startsAt: Value(at),
+        durationMinutes: Value(service.duration.inMinutes),
+        priceCents: Value(priceCents),
+        paymentMethod: Value(paidWith.name),
+      ),
+    );
+  }
+
+  /// Apaga um lançamento. É o conserto de quem lançou duas vezes — repetição
+  /// não se resolve editando.
+  Future<void> delete(String id) {
+    return (_db.delete(_db.appointments)..where((a) => a.id.equals(id))).go();
+  }
+
   Stream<List<Appointment>> _watchRange(
     DateTime from,
     DateTime to, {
@@ -170,6 +203,7 @@ class AgendaRepository {
       duration: Duration(minutes: appointment.durationMinutes),
       priceCents: appointment.priceCents,
       paidWith: PaymentMethod.parse(appointment.paymentMethod),
+      isWalkIn: appointment.walkIn,
       client: client == null
           ? null
           : Client(
@@ -195,3 +229,25 @@ class AgendaRepository {
 final agendaRepositoryProvider = Provider<AgendaRepository>(
   (ref) => AgendaRepository(ref.watch(appDatabaseProvider)),
 );
+
+/// Como a barbearia mais recebe, pelos últimos dois meses.
+///
+/// Dois meses porque é tempo de acompanhar uma mudança real de hábito — o Pix
+/// comendo o dinheiro — sem que uma semana atípica vire o padrão.
+///
+/// `autoDispose` porque só a folha do horário pergunta: guardado, deixaria uma
+/// consulta de sessenta dias escutando o banco para sempre.
+final StreamProvider<PaymentMethod?> usualPaymentProvider =
+    StreamProvider.autoDispose<PaymentMethod?>((ref) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      return ref
+          .watch(agendaRepositoryProvider)
+          .watchRange(
+            today.subtract(const Duration(days: 60)),
+            today.add(const Duration(days: 1)),
+            includeSales: true,
+          )
+          .map(usualPayment);
+    });

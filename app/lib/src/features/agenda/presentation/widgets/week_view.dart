@@ -11,24 +11,29 @@ import 'package:marcos_barber/src/features/agenda/presentation/week_view_model.d
 import 'package:marcos_barber/src/features/agenda/presentation/widgets/appointment_sheet.dart';
 import 'package:marcos_barber/src/features/booking/presentation/new_appointment_view_model.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
-import 'package:marcos_barber/src/shared/formatters/money.dart';
+import 'package:marcos_barber/src/shared/widgets/app_card.dart';
 import 'package:marcos_barber/src/shared/widgets/async_view.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 /// A semana inteira numa tela.
 ///
-/// Mesma agenda da visao de Dia, so que resumida. Duas regras seguram a
+/// Mesma agenda da visao de Dia, so que resumida. Tres regras seguram a
 /// leitura:
 ///
+/// - **Um cartao por dia, e nao um por horario.** Uma semana cheia tinha vinte
+///   cartoes soltos, com linha de ponta a ponta entre os dias — parecia
+///   planilha. Agora o dia inteiro mora num cartao so, e os horarios sao
+///   linhas dentro dele.
 /// - **Dia vazio ocupa uma linha, nao um bloco.** Numa semana com tres dias
 ///   cheios, os outros quatro nao podem gastar metade da tela dizendo que nao
-///   aconteceu nada.
-/// - **Card branco para quem esta marcado, cinza para o que esta vago.** E a
-///   mesma linguagem da visao de Dia, so que mais baixa: buraco na agenda tem
-///   que parecer buraco nas duas telas.
-/// - **Nada aqui troca de visao.** Tocar um horario abre a folha dele e
-///   continua na semana. Quem quer o Dia toca em "Dia" — foi para isso que o
-///   segmentado do cabecalho existe.
+///   aconteceu nada. A altura vira a noticia: grosso e dia cheio, fino e dia
+///   livre.
+/// - **Brecha nao aparece aqui.** Na visao de Dia o buraco de 40 minutos e a
+///   oportunidade; na semana, entre dois nomes, e ruido. O tempo livre da
+///   semana esta somado no topo.
+///
+/// Nada aqui troca de visao: tocar um horario abre a folha dele e continua na
+/// semana.
 class WeekView extends ConsumerWidget {
   const new({super.key});
 
@@ -39,7 +44,12 @@ class WeekView extends ConsumerWidget {
       onRetry: () => ref.invalidate(weekOverviewProvider),
       builder: (week) => ListView(
         // Espaco para o botao redondo nao tapar a ultima linha.
-        padding: const EdgeInsets.only(bottom: 92),
+        padding: const EdgeInsets.fromLTRB(
+          Dimens.screenGutter,
+          0,
+          Dimens.screenGutter,
+          92,
+        ),
         children: [
           _Summary(week: week),
           for (final day in week.days) _Day(day: day),
@@ -60,16 +70,10 @@ class _Summary extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        Dimens.screenGutter,
-        0,
-        Dimens.screenGutter,
-        Dimens.gapSmall,
-      ),
+      padding: const EdgeInsets.only(bottom: Dimens.gapSmall),
       child: Text(
-        // "livres" prometeria horario a venda tambem nos dias que ja passaram.
         '${(week.occupancy * 100).round()}% da cadeira vendida · '
-        '${formatDuration(week.freeTime)} sem atendimento',
+        '${formatDuration(week.freeTime)} vagas',
         style: theme.textTheme.bodySmall?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),
@@ -78,54 +82,55 @@ class _Summary extends StatelessWidget {
   }
 }
 
-class _Day extends ConsumerWidget {
+class _Day extends StatelessWidget {
   const new({required this.day});
 
   final DayOverview day;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Fechado, ou aberto e sem ninguem: nao ha grade para mostrar.
-    final hasGrid = !day.isClosed && day.slots.any((slot) => slot is! FreeSlot);
-    if (!hasGrid) return _QuietDay(day: day);
+  Widget build(BuildContext context) {
+    // A brecha nao entra na semana: o que sobra e o que ocupa a cadeira.
+    final taken = [
+      for (final slot in day.slots)
+        if (slot is! FreeSlot) slot,
+    ];
+    if (day.isClosed || taken.isEmpty) return _QuietDay(day: day);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _DayHeader(day: day),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            Dimens.screenGutter,
-            0,
-            Dimens.screenGutter,
-            Dimens.gapMedium,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (final slot in day.slots) ...[
-                if (slot != day.slots.first)
-                  const SizedBox(height: Dimens.cardGap),
-                switch (slot) {
-                  BookedSlot(:final appointment) => _BookedRow(
-                    appointment: appointment,
-                  ),
-                  FreeSlot() => _GapRow(slot: slot),
-                  BlockedSlot() => _ClosedRow(slot: slot),
-                },
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Dimens.gapMedium),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _DayHeading(day: day),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < taken.length; i++) ...[
+                  // Pelo indice, e nao comparando com o primeiro: dois blocos
+                  // sao iguais por valor, e a comparacao comeria o fio.
+                  if (i > 0) const _RowDivider(),
+                  switch (taken[i]) {
+                    BookedSlot(:final appointment) => _BookedRow(
+                      appointment: appointment,
+                    ),
+                    final BlockedSlot blocked => _ClosedRow(slot: blocked),
+                    FreeSlot() => const SizedBox.shrink(),
+                  },
+                ],
               ],
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-/// Dia sem grade: cabe numa linha.
+/// Dia fechado ou sem ninguem: cabe numa linha.
 ///
-/// Fechado, dia que ja passou sem ninguem, ou dia livre que ainda da para
-/// vender — este ultimo e o unico que convida a tocar.
+/// Sem cartao de proposito — a diferenca de altura entre esta linha e o bloco
+/// de um dia cheio e o desenho da semana.
 class _QuietDay extends ConsumerWidget {
   const new({required this.day});
 
@@ -138,22 +143,13 @@ class _QuietDay extends ConsumerWidget {
     final canBook = !day.isClosed && !day.isPast;
 
     final line = Padding(
-      padding: const EdgeInsets.fromLTRB(
-        Dimens.screenGutter,
-        Dimens.gapMedium,
-        Dimens.screenGutter,
-        Dimens.gapMedium,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 11),
       child: Row(
         children: [
           _DayLabel(day: day, isQuiet: true),
           const Spacer(),
           Text(
-            switch (day) {
-              _ when day.isClosed => 'fechado',
-              _ when day.isPast => 'ninguém',
-              _ => 'livre o dia todo',
-            },
+            day.isClosed ? 'fechado' : 'vago',
             style: theme.textTheme.bodySmall?.copyWith(
               color: colors.onSurfaceVariant,
             ),
@@ -162,64 +158,35 @@ class _QuietDay extends ConsumerWidget {
       ),
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const _Rule(),
-        if (!canBook)
-          line
-        else
-          InkWell(
-            onTap: () {
-              ref.read(bookingProvider.notifier).startOnDay(day.date);
-              unawaited(context.push(Routes.newAppointment));
-            },
-            child: line,
-          ),
-      ],
+    if (!canBook) return line;
+
+    return InkWell(
+      onTap: () {
+        ref.read(bookingProvider.notifier).startOnDay(day.date);
+        unawaited(context.push(Routes.newAppointment));
+      },
+      child: line,
     );
   }
 }
 
-/// O cabecalho do dia que tem grade. So texto: nao leva a lugar nenhum.
-class _DayHeader extends StatelessWidget {
+/// O nome do dia, acima do cartao.
+///
+/// Fora do cartao e no tom de rotulo de secao, como no resto do app: o
+/// cabecalho apresenta o bloco, e nao disputa com os nomes de dentro dele.
+///
+/// Sem o total do dia: dinheiro e assunto do Caixa, e o da semana ja esta na
+/// linha de cima. Aqui ele so competia com os nomes.
+class _DayHeading extends StatelessWidget {
   const new({required this.day});
 
   final DayOverview day;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const _Rule(),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            Dimens.screenGutter,
-            Dimens.gapMedium,
-            Dimens.screenGutter,
-            Dimens.gapSmall,
-          ),
-          child: Row(
-            children: [
-              _DayLabel(day: day, isQuiet: false),
-              const Spacer(),
-              Text(
-                day.revenueCents == 0
-                    ? '${day.bookedCount} marcado'
-                    : formatMoney(day.revenueCents),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, Dimens.gapSmall, 2, 6),
+      child: _DayLabel(day: day, isQuiet: false),
     );
   }
 }
@@ -230,7 +197,7 @@ class _DayLabel extends StatelessWidget {
 
   final DayOverview day;
 
-  /// Dia sem grade fica mais apagado: e o que se pula ao ler a semana.
+  /// Dia sem ninguem fica mais apagado: e o que se pula ao ler a semana.
   final bool isQuiet;
 
   @override
@@ -243,12 +210,8 @@ class _DayLabel extends StatelessWidget {
       textBaseline: TextBaseline.alphabetic,
       children: [
         Text(
-          // Peso de titulo: este cabecalho manda nos cards abaixo dele. Com o
-          // peso de antes ele pesava menos que os nomes dos clientes, e a
-          // semana virava uma lista sem dono.
           '${formatShortWeekday(day.date)} ${day.date.day}',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontSize: 17,
+          style: theme.textTheme.titleSmall?.copyWith(
             color: isQuiet ? colors.onSurfaceVariant : colors.onSurface,
           ),
         ),
@@ -257,7 +220,7 @@ class _DayLabel extends StatelessWidget {
           Container(
             width: 5,
             height: 5,
-            margin: const EdgeInsets.only(bottom: 5),
+            margin: const EdgeInsets.only(bottom: 4),
             decoration: BoxDecoration(
               color: colors.onSurface,
               shape: BoxShape.circle,
@@ -269,19 +232,24 @@ class _DayLabel extends StatelessWidget {
   }
 }
 
-/// A linha que separa um dia do outro. Vai de ponta a ponta, ao contrario das
-/// divisorias de dentro do dia — e o que faz o olho ver blocos.
-class _Rule extends StatelessWidget {
+/// O fio entre dois horarios do mesmo dia.
+///
+/// Recuado e claro: separa linhas irmas dentro de um cartao, nao um bloco do
+/// outro — para isso quem serve e o espaco entre os cartoes.
+class _RowDivider extends StatelessWidget {
   const new();
 
   @override
   Widget build(BuildContext context) {
-    return Divider(height: 1, color: Theme.of(context).colorScheme.outline);
+    return Divider(
+      height: 1,
+      indent: 54,
+      color: Theme.of(context).colorScheme.outlineVariant,
+    );
   }
 }
 
-/// Um horario marcado. Card branco, igual ao da visao de Dia, so que mais
-/// baixo: aqui a tela precisa caber sete dias.
+/// Um horario marcado, como linha do cartao do dia.
 class _BookedRow extends StatelessWidget {
   const new({required this.appointment});
 
@@ -292,121 +260,50 @@ class _BookedRow extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    return Material(
-      color: colors.surfaceContainer,
-      borderRadius: BorderRadius.circular(Dimens.cardRadius),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        // Abre a folha do horario. Continua na semana.
-        onTap: () => AppointmentSheet.show(context, appointment),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Dimens.cardPadding,
-            vertical: 13,
-          ),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 46,
-                child: Text(
-                  formatHour(appointment.startsAt),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  appointment.who,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                appointment.service.name,
+    return InkWell(
+      // Abre a folha do horario. Continua na semana.
+      onTap: () => AppointmentSheet.show(context, appointment),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 46,
+              child: Text(
+                formatHour(appointment.startsAt),
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                appointment.who,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              appointment.service.name,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// Uma brecha. Cinza, como na visao de Dia — buraco tem que parecer buraco.
-/// Tocar leva direto para marcar naquela hora.
-class _GapRow extends ConsumerWidget {
-  const new({required this.slot});
-
-  final FreeSlot slot;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    // Vaga que ja terminou nao convida mais: o formulario nao teria horario
-    // para oferecer.
-    final isGone = slot.end.isBefore(DateTime.now());
-
-    return Material(
-      color: colors.secondaryContainer,
-      borderRadius: BorderRadius.circular(Dimens.cardRadius),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: isGone
-            ? null
-            : () {
-                ref.read(bookingProvider.notifier).startAtSlot(slot.start);
-                unawaited(context.push(Routes.newAppointment));
-              },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Dimens.cardPadding,
-            vertical: 12,
-          ),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 46,
-                child: Text(
-                  formatHour(slot.start),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colors.onSurfaceVariant,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  isGone
-                      ? '${formatDuration(slot.end.difference(slot.start))} sem ninguém'
-                      : '${formatDuration(slot.end.difference(slot.start))} livre',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Uma faixa fechada — feriado, medico, viagem. Cinza e sem toque: nao ha o
-/// que fazer com ela aqui.
+/// Uma faixa fechada — feriado, medico, viagem. Sem toque: nao ha o que fazer
+/// com ela aqui.
 class _ClosedRow extends StatelessWidget {
   const new({required this.slot});
 
@@ -417,48 +314,39 @@ class _ClosedRow extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.secondaryContainer,
-        borderRadius: BorderRadius.circular(Dimens.cardRadius),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: Dimens.cardPadding,
-          vertical: 12,
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 46,
-              child: Text(
-                formatHour(slot.start),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 46,
+            child: Text(
+              formatHour(slot.start),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
-            const SizedBox(width: 8),
-            Icon(
-              Symbols.block_rounded,
-              size: 16,
-              weight: 500,
-              color: colors.onSurfaceVariant,
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                slot.reason ?? 'Fechado',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
-                ),
+          ),
+          const SizedBox(width: 8),
+          Icon(
+            Symbols.block_rounded,
+            size: 16,
+            weight: 500,
+            color: colors.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              slot.reason ?? 'Fechado',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

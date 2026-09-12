@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:marcos_barber/src/core/theme/app_colors.dart';
 import 'package:marcos_barber/src/core/theme/status_colors.dart';
 import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
+import 'package:marcos_barber/src/features/agenda/presentation/widgets/appointment_sheet.dart';
 import 'package:marcos_barber/src/features/reports/domain/cash_days.dart';
 import 'package:marcos_barber/src/features/reports/presentation/cash_view_model.dart';
 import 'package:marcos_barber/src/features/reports/presentation/income_form.dart';
@@ -94,7 +97,7 @@ class _Body extends ConsumerWidget {
                   children: [
                     Text(
                       formatMoney(report.earnedCents),
-                      style: theme.textTheme.displaySmall,
+                      style: theme.textTheme.displayLarge,
                     ),
                     const SizedBox(height: 2),
                     Text(_counted(report), style: theme.textTheme.titleMedium),
@@ -170,6 +173,15 @@ class _Row extends StatelessWidget {
           endIndent: Dimens.screenGutter,
         ),
         ListTile(
+          // O que foi digitado abre o formulário que o criou — o mesmo
+          // caminho da despesa no Saiu. O que veio da agenda abre a folha do
+          // horário, porque ali a pergunta é outra: concluir, remarcar,
+          // falta. Componente igual para tarefa igual.
+          onTap: () => unawaited(
+            appointment.isWalkIn
+                ? IncomeForm.show(context, entry: appointment)
+                : AppointmentSheet.show(context, appointment),
+          ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: Dimens.screenGutter,
             vertical: 2,

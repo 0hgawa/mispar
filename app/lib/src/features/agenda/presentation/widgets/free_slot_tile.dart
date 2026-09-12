@@ -47,9 +47,10 @@ class FreeSlotTile extends StatelessWidget {
                 ),
               ),
               Text(
-                isGone
-                    ? '${formatDuration(slot.end.difference(slot.start))} sem ninguém'
-                    : '${formatDuration(slot.end.difference(slot.start))} livre',
+                // Uma palavra só, e a mesma no app inteiro. O que já passou
+                // não precisa dizer isso por escrito: está apagado e não abre
+                // nada ao toque.
+                '${formatDuration(slot.end.difference(slot.start))} vago',
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: isGone ? colors.onSurfaceVariant : colors.onSurface,

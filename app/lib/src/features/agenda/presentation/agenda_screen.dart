@@ -8,10 +8,10 @@ import 'package:marcos_barber/src/core/theme/app_colors.dart';
 import 'package:marcos_barber/src/features/agenda/presentation/day_view_model.dart';
 import 'package:marcos_barber/src/features/agenda/presentation/widgets/day_strip.dart';
 import 'package:marcos_barber/src/features/agenda/presentation/widgets/day_view.dart';
+import 'package:marcos_barber/src/features/agenda/presentation/widgets/share_slots_screen.dart';
 import 'package:marcos_barber/src/features/agenda/presentation/widgets/week_view.dart';
 import 'package:marcos_barber/src/features/booking/presentation/new_appointment_view_model.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
-import 'package:marcos_barber/src/shared/widgets/segmented_toggle.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 /// Como o Marcos esta olhando a agenda agora.
@@ -121,7 +121,9 @@ class _Header extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(
         Dimens.screenGutter,
         8,
-        Dimens.screenGutter,
+        // Menos à direita porque o botão de ícone traz o recuo dele: é o
+        // mesmo acerto do cabeçalho do Caixa, para os dois alinharem.
+        Dimens.gapSmall,
         Dimens.gapMedium,
       ),
       child: Column(
@@ -137,6 +139,7 @@ class _Header extends ConsumerWidget {
                   style: theme.textTheme.headlineMedium,
                 ),
               ),
+              const _Advertise(),
               const _ViewToggle(),
             ],
           ),
@@ -183,20 +186,58 @@ class _Header extends ConsumerWidget {
   }
 }
 
-/// Dia ou Semana, do jeito que o resto do app faz segmentado.
+/// Divulgar os horários que sobraram no dia.
+///
+/// Só aparece quando há o que oferecer: dia cheio não se divulga, e botão que
+/// não faz nada é pior que botão nenhum.
+class _Advertise extends ConsumerWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hours = ref.watch(slotsToAdvertiseProvider).value ?? const [];
+    if (hours.isEmpty) return const SizedBox.shrink();
+
+    return IconButton(
+      icon: const Icon(Symbols.ios_share_rounded, weight: 500),
+      tooltip: 'Divulgar horário',
+      onPressed: () => unawaited(
+        ShareSlotsScreen.show(
+          context,
+          day: ref.read(selectedDayProvider),
+          hours: hours,
+        ),
+      ),
+    );
+  }
+}
+
+/// Trocar entre Dia e Semana: os ícones de densidade — três traços para a
+/// semana, dois para o dia.
+///
+/// Eles dizem a mesma coisa que os rótulos "Dia" e "Semana" diziam, mas pelo
+/// desenho — mais linhas é mais dia na tela. E não pintam de preto mais um
+/// pedaço de uma tela que já tem o dia escolhido e o botão de marcar.
+///
+/// O desenho mostra **para onde se vai**, e não onde se está; a dica de toque
+/// repete em palavras.
 class _ViewToggle extends ConsumerWidget {
   const new();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SegmentedToggle(
-      options: const [
-        (value: AgendaView.day, label: 'Dia'),
-        (value: AgendaView.week, label: 'Semana'),
-      ],
-      selected: ref.watch(agendaViewProvider),
-      onSelect: (view) {
-        ref.read(agendaViewProvider.notifier).select(view);
+    final isDay = ref.watch(agendaViewProvider) == AgendaView.day;
+
+    return IconButton(
+      icon: Icon(
+        isDay ? Symbols.density_medium_rounded : Symbols.density_large_rounded,
+        weight: 500,
+      ),
+      tooltip: isDay ? 'Ver a semana' : 'Ver o dia',
+      onPressed: () {
+        ref
+            .read(agendaViewProvider.notifier)
+            .select(isDay ? AgendaView.week : AgendaView.day);
         ref.read(monthOpenProvider.notifier).close();
       },
     );

@@ -7,12 +7,14 @@ import 'package:marcos_barber/src/core/router/app_router.dart';
 import 'package:marcos_barber/src/core/theme/app_colors.dart';
 import 'package:marcos_barber/src/core/theme/status_colors.dart';
 import 'package:marcos_barber/src/features/agenda/data/agenda_repository.dart';
+import 'package:marcos_barber/src/features/agenda/data/shop_settings_repository.dart';
 import 'package:marcos_barber/src/features/agenda/domain/appointment.dart';
 import 'package:marcos_barber/src/features/agenda/domain/appointment_status.dart';
 import 'package:marcos_barber/src/features/agenda/domain/payment_method.dart';
 import 'package:marcos_barber/src/features/agenda/domain/reminder.dart';
 import 'package:marcos_barber/src/features/booking/presentation/new_appointment_view_model.dart';
 import 'package:marcos_barber/src/features/clients/domain/client.dart';
+import 'package:marcos_barber/src/features/reports/presentation/income_form.dart';
 import 'package:marcos_barber/src/shared/formatters/day_time.dart';
 import 'package:marcos_barber/src/shared/formatters/money.dart';
 import 'package:marcos_barber/src/shared/whatsapp.dart';
@@ -62,6 +64,12 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
     final isClosed =
         appointment.status == AppointmentStatus.done ||
         appointment.status == AppointmentStatus.noShow;
+    // Como a barbearia mais recebe. Sai do histórico, e não de um ajuste — o
+    // mesmo que o robô faz com o serviço de sempre do cliente.
+    final usual = ref.watch(usualPaymentProvider).value;
+    // So o que a barbearia aceita: maquininha que nao existe nao vira botao.
+    final accepted =
+        ref.watch(acceptedPaymentsProvider).value ?? PaymentMethod.values;
 
     Future<void> mark(
       AppointmentStatus status,
@@ -147,26 +155,52 @@ class _AppointmentSheetState extends ConsumerState<AppointmentSheet> {
                   ),
                   const SizedBox(height: Dimens.gapMedium),
                 ],
-                // Ja fechado: a unica saida e desfazer, sem oferecer o resto.
-                OutlinedButton(
-                  onPressed: () =>
-                      mark(AppointmentStatus.confirmed, 'Horário reaberto.'),
-                  child: const Text('Reabrir horário'),
-                ),
+                // Venda de balcao e coisa que o Marcos digitou, e se corrige
+                // no mesmo formulario que a criou — o mesmo que a despesa faz.
+                // Reabrir nao serve: ela nunca esteve marcada.
+                if (appointment.isWalkIn)
+                  OutlinedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      unawaited(IncomeForm.show(context, entry: appointment));
+                    },
+                    child: const Text('Editar lançamento'),
+                  )
+                else
+                  // Ja fechado: a unica saida e desfazer, sem oferecer o resto.
+                  OutlinedButton(
+                    onPressed: () =>
+                        mark(AppointmentStatus.confirmed, 'Horário reaberto.'),
+                    child: const Text('Reabrir horário'),
+                  ),
               ] else if (_asking) ...[
                 Text('Recebeu como?', style: theme.textTheme.titleMedium),
                 const SizedBox(height: Dimens.gapSmall),
                 Row(
                   children: [
-                    for (final method in PaymentMethod.values) ...[
-                      if (method != PaymentMethod.values.first)
+                    for (final method in accepted) ...[
+                      if (method != accepted.first)
                         const SizedBox(width: Dimens.gapSmall),
                       Expanded(
+                        // Preto so na que a barbearia mais usa; as outras
+                        // tonais. O Material admite um preenchido por tela, e
+                        // tres pretos lado a lado nao fazem hierarquia: fazem
+                        // briga, e ainda sugerem que um deles e o certo.
+                        //
+                        // Sem historico ainda, `usual` e nulo e as tres saem
+                        // iguais — nao se inventa padrao antes de ter dado.
+                        //
+                        // O recuo e menor porque "Dinheiro" quebra em duas
+                        // linhas com o recuo padrao.
                         child: FilledButton(
-                          // Tres botoes numa linha: com o recuo padrao,
-                          // "Dinheiro" quebra em duas linhas.
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
+                            backgroundColor: method == usual
+                                ? colors.primary
+                                : colors.secondaryContainer,
+                            foregroundColor: method == usual
+                                ? colors.onPrimary
+                                : colors.onSecondaryContainer,
                           ),
                           onPressed: () => mark(
                             AppointmentStatus.done,
