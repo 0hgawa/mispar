@@ -240,6 +240,13 @@ class SyncState extends Table {
   /// pergunta "o que foi apagado desde então?".
   DateTimeColumn get lastPulledAt => dateTime().nullable()();
 
+  /// A tela de entrada já foi respondida — entrando ou dispensando.
+  ///
+  /// Uma vez só, na primeira abertura. Depois disso o app abre direto na
+  /// agenda, com ou sem conta: quem está com a tesoura na mão não pode
+  /// esbarrar num formulário todo dia.
+  BoolColumn get welcomed => boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }

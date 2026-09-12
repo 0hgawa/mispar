@@ -23,7 +23,7 @@ class AppDatabase extends _$AppDatabase {
   new() : super(driftDatabase(name: 'mispar'));
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   /// Os gatilhos que anotam quem foi apagado.
   ///
@@ -122,6 +122,8 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(syncState);
         await _tombstoneTriggers();
       }
+      // v19: a tela de entrada, mostrada uma vez só.
+      if (from < 19) await m.addColumn(syncState, syncState.welcomed);
       // v17: o cadastro da barbearia — nome, endereço e o @ do Instagram.
       if (from < 17) {
         await m.addColumn(shopSettings, shopSettings.shopName);
