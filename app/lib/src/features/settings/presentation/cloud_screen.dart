@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:mispar/src/core/config/env.dart';
+import 'package:mispar/src/core/data/database/backup.dart';
 import 'package:mispar/src/core/data/remote/session.dart';
 import 'package:mispar/src/core/theme/app_colors.dart';
 import 'package:mispar/src/core/theme/status_colors.dart';
 import 'package:mispar/src/shared/widgets/app_snack.dart';
 import 'package:mispar/src/shared/widgets/page_bar.dart';
+import 'package:mispar/src/shared/widgets/screen_title.dart';
 import 'package:mispar/src/shared/widgets/sign_in_form.dart';
 
 /// A cópia da barbearia no servidor.
@@ -63,7 +65,81 @@ class _CloudScreenState extends ConsumerState<CloudScreen> {
                       onBusy: (busy) => setState(() => _working = busy),
                     ),
                   ),
+                const _Arquivo(),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A cópia que não depende de servidor nenhum.
+///
+/// A nuvem já copia sozinha, e é ela que devolve a barbearia num celular novo.
+/// Este arquivo cobre o que ela não cobre: projeto pausado por inatividade,
+/// conta perdida, ou o dono querendo os próprios dados fora de um serviço de
+/// terceiro. Uma cópia que depende de a empresa continuar de pé não deveria
+/// ser a única.
+class _Arquivo extends ConsumerStatefulWidget {
+  const new();
+
+  @override
+  ConsumerState<_Arquivo> createState() => _ArquivoState();
+}
+
+class _ArquivoState extends ConsumerState<_Arquivo> {
+  bool _working = false;
+
+  Future<void> _share() async {
+    setState(() => _working = true);
+    try {
+      await ref.read(backupProvider).share();
+    } on Object {
+      if (!mounted) return;
+      showSnack(context, 'Não consegui gerar a cópia.');
+    } finally {
+      if (mounted) setState(() => _working = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Dimens.screenGutter,
+        Dimens.gapLarge * 2,
+        Dimens.screenGutter,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SectionLabel('Cópia em arquivo'),
+          Text(
+            'Gera um arquivo com tudo que está no aparelho e abre o '
+            'compartilhar — mande para o seu WhatsApp, para o Drive, onde '
+            'quiser. É a cópia que continua sua mesmo que este servidor saia '
+            'do ar.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: Dimens.gapMedium),
+          OutlinedButton.icon(
+            onPressed: _working ? null : () => unawaited(_share()),
+            icon: const Icon(Symbols.download_rounded, size: 18, weight: 500),
+            label: const Text('Guardar uma cópia'),
+          ),
+          const SizedBox(height: Dimens.gapSmall),
+          Text(
+            'Para voltar de uma cópia dessas, hoje, é pelo login acima.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
