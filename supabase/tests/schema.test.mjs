@@ -27,6 +27,7 @@ for (const file of [
   '0008_products_and_walk_ins.sql',
   '0009_reminder.sql',
   '0010_full_copy.sql',
+  '0011_incremental_sync.sql',
 ]) {
   try {
     await db.exec(readFileSync(DIR + file, 'utf8'));
@@ -409,6 +410,69 @@ check('prazo maior que um ano e recusado', prazoLongo);
 await db.exec('update shop_settings set drifted_days = 90');
 const mudou = await one('select drifted_days from shop_settings');
 check('prazo dentro da conta grava', mudou.drifted_days === 90, String(mudou.drifted_days));
+
+// ---- 13. sincronia incremental: so o que mudou, e o que sumiu ----
+
+// Editar carimba a hora. Sem o gatilho, quem gravasse sem preencher sumiria
+// da sincronia sem erro nenhum.
+const antes = await one("select updated_at from services where id = 'corte'");
+await db.exec("update services set price_cents = 4500 where id = 'corte'");
+const depois = await one("select updated_at from services where id = 'corte'");
+check('editar carimba updated_at', depois.updated_at > antes.updated_at,
+  antes.updated_at + ' -> ' + depois.updated_at);
+
+// A pergunta que o celular faz a cada passada.
+// O marco e o carimbo mais novo do catalogo, e nao o do corte: os testes
+// acima ja inseriram servicos depois da migracao, e eles sao mais novos com
+// razao. Depois do update, so o corte fica acima da marca.
+const marcoSync = (await one('select max(updated_at) t from services')).t;
+await db.exec("update services set price_cents = 4600 where id = 'corte'");
+const desdeEntao = await all(
+  'select id from services where updated_at > $1 order by id', [marcoSync]);
+check('so o que mudou volta na passada',
+  desdeEntao.length === 1 && desdeEntao[0].id === 'corte',
+  JSON.stringify(desdeEntao));
+
+// Consulta incremental nao enxerga o que sumiu: a linha nao esta mais la para
+// contar. Por isso a lapide.
+await db.exec("insert into services (id, name, duration_minutes, price_cents) values ('teste', 'Teste', 30, 1000)");
+const marco = (await one('select now() t')).t;
+await db.exec("delete from services where id = 'teste'");
+const lapides = await all(
+  'select table_name, row_id from deleted_rows where deleted_at >= $1', [marco]);
+check('apagar deixa lapide para o celular achar',
+  lapides.length === 1 && lapides[0].table_name === 'services' && lapides[0].row_id === 'teste',
+  JSON.stringify(lapides));
+
+// Linha recriada e apagada de novo vale pela data mais nova — e a noticia que
+// o aparelho ainda nao tem.
+await db.exec("insert into services (id, name, duration_minutes, price_cents) values ('teste', 'Teste', 30, 1000)");
+await db.exec("delete from services where id = 'teste'");
+const umaSo = await one("select count(*)::int n from deleted_rows where row_id = 'teste'");
+check('apagar duas vezes deixa uma lapide so', umaSo.n === 1, String(umaSo.n));
+
+// Ajuste nao se apaga, se edita: linha fixa nao ganha lapide.
+const semLapide = await one(
+  "select count(*)::int n from pg_trigger where tgname = 'shop_settings_tombstone'");
+check('ajuste de linha fixa nao ganha lapide', semLapide.n === 0, String(semLapide.n));
+
+// A chave publica do app nao pode ler o livro dos apagados sem entrar.
+let anonNoLivro = false;
+try {
+  await db.exec('set role anon');
+  await db.query('select * from deleted_rows');
+  anonNoLivro = true;
+} catch {
+} finally {
+  await db.exec('reset role');
+}
+check('anonimo nao le o livro dos apagados', anonNoLivro === false);
+
+// O indice da fila de lembretes existe: sem ele o cron varre a agenda inteira
+// de dez em dez minutos, para sempre.
+const idx = await one(
+  "select count(*)::int n from pg_indexes where indexname = 'appointments_due_idx'");
+check('a fila de lembretes tem indice proprio', idx.n === 1, String(idx.n));
 
 console.log(failed === 0 ? '\nTUDO PASSOU' : `\n${failed} FALHA(S)`);
 process.exit(failed === 0 ? 0 : 1);
