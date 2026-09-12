@@ -122,7 +122,10 @@ async function greet(db: SupabaseClient, message: Incoming): Promise<State> {
     .order("price_cents");
 
   if (!services?.length) {
-    await sendText(message.phone, "A agenda esta fechada agora. Volte mais tarde.");
+    await sendText(
+      message.phone,
+      "A agenda esta fechada agora. Volte mais tarde.",
+    );
     return { step: "start" };
   }
 
@@ -158,7 +161,11 @@ async function offerDays(
 ): Promise<State> {
   const days: Choice[] = [];
 
-  for (let ahead = 0; ahead < BOOKING_HORIZON_DAYS && days.length < 8; ahead++) {
+  for (
+    let ahead = 0;
+    ahead < BOOKING_HORIZON_DAYS && days.length < 8;
+    ahead++
+  ) {
     const day = addDays(today(), ahead);
     const { data } = await db.rpc("available_slots", {
       p_day: day,
@@ -168,7 +175,9 @@ async function offerDays(
       days.push({
         id: `day:${day}`,
         label: shortDay(day),
-        detail: `${data.length} ${data.length === 1 ? "horario" : "horarios"} livres`,
+        detail: `${data.length} ${
+          data.length === 1 ? "horario" : "horarios"
+        } livres`,
       });
     }
   }
@@ -389,7 +398,9 @@ async function lastService(
 ): Promise<Service | null> {
   const { data } = await db
     .from("appointments")
-    .select("services(id, name, duration_minutes, price_cents), clients!inner(phone)")
+    .select(
+      "services(id, name, duration_minutes, price_cents), clients!inner(phone)",
+    )
     .eq("clients.phone", phone)
     .eq("status", "done")
     .order("starts_at", { ascending: false })

@@ -16,8 +16,18 @@ const WEEKDAYS = [
 ];
 
 const MONTHS = [
-  "janeiro", "fevereiro", "marco", "abril", "maio", "junho",
-  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+  "janeiro",
+  "fevereiro",
+  "marco",
+  "abril",
+  "maio",
+  "junho",
+  "julho",
+  "agosto",
+  "setembro",
+  "outubro",
+  "novembro",
+  "dezembro",
 ];
 
 /** Tira acento e caixa: "Sábado" e "sabado" tem que dar na mesma coisa. */

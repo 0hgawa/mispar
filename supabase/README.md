@@ -8,6 +8,23 @@ functions/    edge functions (Deno)
 tests/        as migrations rodando num Postgres de verdade
 ```
 
+## Conferir o robô
+
+O código das edge functions roda em Deno, e não no Flutter — então ele não
+entra no `flutter analyze` nem nos testes do app. Precisa ser conferido à
+parte, e ficou **um ano sem ser**: até 12/09/2026 nenhuma dessas três linhas
+tinha rodado uma vez.
+
+```bash
+cd supabase/functions
+deno check whatsapp/index.ts reminders/index.ts
+deno lint
+deno test
+```
+
+Rode antes de publicar qualquer função. Erro de tipo aqui só aparece quando o
+cliente manda mensagem — e aí quem descobre é ele.
+
 ## Rodar os testes do banco
 
 Não precisa de Docker nem de conta no Supabase: o [PGlite](https://pglite.dev)
