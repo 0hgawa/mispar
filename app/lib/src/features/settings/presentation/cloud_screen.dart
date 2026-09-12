@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:mispar/src/core/config/env.dart';
 import 'package:mispar/src/core/data/database/backup.dart';
+import 'package:mispar/src/core/data/database/restore.dart';
 import 'package:mispar/src/core/data/remote/session.dart';
 import 'package:mispar/src/core/theme/app_colors.dart';
 import 'package:mispar/src/core/theme/status_colors.dart';
 import 'package:mispar/src/shared/widgets/app_snack.dart';
+import 'package:mispar/src/shared/widgets/confirm.dart';
 import 'package:mispar/src/shared/widgets/page_bar.dart';
 import 'package:mispar/src/shared/widgets/screen_title.dart';
 import 'package:mispar/src/shared/widgets/sign_in_form.dart';
@@ -92,6 +94,42 @@ class _Arquivo extends ConsumerStatefulWidget {
 class _ArquivoState extends ConsumerState<_Arquivo> {
   bool _working = false;
 
+  /// Volta o aparelho para o que estava na cópia escolhida.
+  ///
+  /// Pergunta antes, e a pergunta diz o que se perde: isto substitui, não
+  /// junta. Misturar as duas daria uma terceira barbearia, que nunca existiu.
+  Future<void> _restore() async {
+    final restore = ref.read(restoreProvider);
+
+    final arquivo = await restore.pick();
+    if (arquivo == null || !mounted) return;
+
+    final confirmado = await askToConfirm(
+      context,
+      title: 'Voltar para esta cópia?',
+      message:
+          'A agenda, os clientes e o caixa que estão neste celular agora são '
+          'substituídos pelo que está no arquivo. Não dá para desfazer.',
+      // "Substituir" e nao "Voltar": o botao de cancelar ja se chama Voltar, e
+      // os dois lado a lado com a mesma palavra pediam para o dedo errar
+      // justamente na acao que nao se desfaz.
+      confirmLabel: 'Substituir',
+    );
+    if (!confirmado || !mounted) return;
+
+    setState(() => _working = true);
+    try {
+      await restore.from(arquivo);
+      if (!mounted) return;
+      showSnack(context, 'Pronto. O aparelho voltou para a cópia.');
+    } on Object {
+      if (!mounted) return;
+      showSnack(context, 'Não consegui ler esse arquivo.');
+    } finally {
+      if (mounted) setState(() => _working = false);
+    }
+  }
+
   Future<void> _share() async {
     setState(() => _working = true);
     try {
@@ -135,12 +173,10 @@ class _ArquivoState extends ConsumerState<_Arquivo> {
             label: const Text('Guardar uma cópia'),
           ),
           const SizedBox(height: Dimens.gapSmall),
-          Text(
-            'Para voltar de uma cópia dessas, hoje, é pelo login acima.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          TextButton(
+            onPressed: _working ? null : () => unawaited(_restore()),
+            style: TextButton.styleFrom(foregroundColor: theme.status.alert),
+            child: const Text('Voltar de uma cópia'),
           ),
         ],
       ),

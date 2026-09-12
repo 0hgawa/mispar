@@ -22,6 +22,12 @@ part 'app_database.g.dart';
 class AppDatabase extends _$AppDatabase {
   new() : super(driftDatabase(name: 'mispar'));
 
+  /// Abre um arquivo qualquer como se fosse o banco do app.
+  ///
+  /// Serve para ler uma copia guardada: as migrations rodam nela, entao uma
+  /// copia de um app mais antigo sobe de versao sozinha antes de ser lida.
+  new aberto(super.e);
+
   @override
   int get schemaVersion => 20;
 

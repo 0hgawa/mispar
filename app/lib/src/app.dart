@@ -55,6 +55,15 @@ class _Entrada extends ConsumerWidget {
     final falta = ref.watch(needsWelcomeProvider).value ?? false;
     if (entrou || !falta) return tela;
 
-    return const WelcomeScreen();
+    // Dentro de um Overlay proprio.
+    //
+    // Aqui e **acima** do Navigator do app, e sem Overlay nada que flutua
+    // acha onde se pendurar: a dica de toque do olho da senha derrubava a
+    // tela inteira com "No Overlay widget found" na primeira abertura.
+    return Overlay(
+      initialEntries: [
+        OverlayEntry(builder: (context) => const WelcomeScreen()),
+      ],
+    );
   }
 }
