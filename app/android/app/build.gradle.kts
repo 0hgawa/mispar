@@ -1,3 +1,14 @@
+import java.util.Properties
+
+// A chave de assinatura, quando existe nesta maquina.
+val assinatura = rootProject.file("key.properties").let { arquivo ->
+    if (arquivo.exists()) {
+        Properties().apply { arquivo.inputStream().use { load(it) } }
+    } else {
+        null
+    }
+}
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -28,10 +39,42 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            if (assinatura != null) {
+                keyAlias = assinatura.getProperty("keyAlias")
+                keyPassword = assinatura.getProperty("keyPassword")
+                // `rootProject`: o `.jks` mora ao lado do `key.properties`,
+                // em android/, e nao dentro do modulo app/.
+                storeFile = rootProject.file(assinatura.getProperty("storeFile"))
+                storePassword = assinatura.getProperty("storePassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Assina com a chave de verdade quando ela esta na maquina, e com a
+            // de depuracao quando nao esta.
+            //
+            // O `key.properties` e o `.jks` ficam fora do git de proposito:
+            // quem tem o arquivo pode publicar atualizacao do app no nome do
+            // dono. Sem eles o projeto continua compilando — quem clona
+            // consegue rodar, so nao consegue assinar.
+            signingConfig = if (assinatura != null) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
+
+            // O R8 tira o codigo que ninguem chama e encurta os nomes que
+            // sobram. E o que separa o APK de trabalhar do APK de testar.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
