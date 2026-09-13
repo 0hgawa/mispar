@@ -34,6 +34,23 @@ class AuthRepository {
     return _auth.signInWithPassword(email: email.trim(), password: password);
   }
 
+  /// Cria a conta — e, com ela, a barbearia.
+  ///
+  /// Não há "criar barbearia" em lugar nenhum porque não precisa: cada conta
+  /// é uma. O que o aparelho já tem — catálogo, horários, tipos de despesa —
+  /// sobe na primeira passada e vira a barbearia dela no servidor.
+  ///
+  /// Devolve verdadeiro quando já entrou. Falso quer dizer que o projeto
+  /// exige confirmar o e-mail antes: a conta existe, mas a sessão só vem
+  /// depois do clique no link.
+  Future<bool> signUp({required String email, required String password}) async {
+    final resposta = await _auth.signUp(
+      email: email.trim(),
+      password: password,
+    );
+    return resposta.session != null;
+  }
+
   /// Sair apaga a sessão, e **não** o banco do aparelho.
   ///
   /// O que está no celular é do barbeiro: sair da conta não pode significar

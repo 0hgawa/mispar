@@ -1,9 +1,12 @@
 import { PGlite } from '@electric-sql/pglite';
+// A trava de sobreposicao por barbearia usa `=` sobre uuid dentro de um indice
+// gist, e isso mora no btree_gist. O Supabase ja tem; aqui carrega-se a mao.
+import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const DIR = fileURLToPath(new URL('../migrations/', import.meta.url));
-const db = await new PGlite();
+const db = await new PGlite({ extensions: { btree_gist } });
 process.on('uncaughtException', (e) => { console.log('ERRO NAO TRATADO: ' + String(e.message).slice(0, 200)); process.exit(1); });
 
 let failed = 0;
@@ -14,6 +17,36 @@ const check = (name, ok, detail = '') => {
 
 // O Supabase ja traz estes papeis; o Postgres puro nao.
 await db.exec(`create role anon; create role authenticated; create role service_role;`);
+
+// E o `auth` dele, que aqui e de mentira mas se comporta igual: `auth.uid()`
+// devolve quem esta logado, e quem esta logado e o que o teste disser.
+//
+// Sem isto nao da para provar a unica coisa que importa depois da 0017: que
+// uma barbearia nao ve a outra. Provar isolamento sem trocar de usuario seria
+// olhar so para o proprio reflexo.
+await db.exec(`
+  create schema if not exists auth;
+  create table auth.users (id uuid primary key, email text unique);
+  create or replace function auth.uid() returns uuid language sql stable as $$
+    select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
+  $$;
+  grant usage on schema auth to anon, authenticated, service_role;
+  grant select on auth.users to anon, authenticated, service_role;
+`);
+
+const DONO = '11111111-1111-1111-1111-111111111111';
+const VIZINHO = '22222222-2222-2222-2222-222222222222';
+
+await db.exec(`
+  insert into auth.users (id, email) values
+    ('${DONO}', 'dono@mispar.app');
+`);
+
+/// Passa a falar como este usuario. Nulo volta a ser "ninguem".
+const comoUsuario = async (id) =>
+  db.exec(`select set_config('request.jwt.claim.sub', '${id ?? ''}', false)`);
+
+await comoUsuario(DONO);
 
 // ---- 1. as migrations aplicam ----
 for (const file of [
@@ -33,6 +66,8 @@ for (const file of [
   '0014_ids_de_texto.sql',
   '0015_a_lapide_se_escreve_sozinha.sql',
   '0016_fiado.sql',
+  '0017_cada_conta_uma_barbearia.sql',
+  '0018_o_robo_por_barbearia.sql',
 ]) {
   try {
     await db.exec(readFileSync(DIR + file, 'utf8'));
@@ -64,7 +99,7 @@ const day = '2027-03-11';
 const at = (h, m = 0) => `${day} ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}-03`;
 
 const booked = await one(
-  `select book_appointment('+5511988124471', 'Rafael Lima', 'corte-barba', $1::timestamptz) id`,
+  `select book_appointment('${DONO}', '+5511988124471', 'Rafael Lima', 'corte-barba', $1::timestamptz) id`,
   [at(14)],
 );
 check('book_appointment devolve id', !!booked.id);
@@ -74,13 +109,13 @@ check('duracao e preco ficam gravados no agendamento', appt.d === 50 && appt.p =
 check('sem sinal ja entra confirmado', appt.s === 'confirmed', appt.s);
 
 // ---- 5. servico com sinal entra aguardando ----
-await db.exec(`select book_appointment('+5511999999999', 'Jonas Beiral', 'platinado', '${at(16)}'::timestamptz)`);
+await db.exec(`select book_appointment('${DONO}', '+5511999999999', 'Jonas Beiral', 'platinado', '${at(16)}'::timestamptz)`);
 const dep = await one(`select status::text s from appointments where service_id = 'platinado'`);
 check('servico com sinal entra aguardando', dep.s === 'awaiting', dep.s);
 
 // ---- 6. o banco recusa sobreposicao ----
 try {
-  await db.exec(`select book_appointment('+5511977777777', 'Outro', 'corte', '${at(14, 30)}'::timestamptz)`);
+  await db.exec(`select book_appointment('${DONO}', '+5511977777777', 'Outro', 'corte', '${at(14, 30)}'::timestamptz)`);
   check('sobreposicao e recusada pelo banco', false, 'deixou marcar em cima');
 } catch (e) {
   check('sobreposicao e recusada pelo banco', /HORARIO_OCUPADO/.test(e.message), e.message.slice(0, 60));
@@ -88,23 +123,23 @@ try {
 
 // ---- 7. encostar sem invadir e permitido ----
 try {
-  await db.exec(`select book_appointment('+5511966666666', 'Colado', 'corte', '${at(14, 50)}'::timestamptz)`);
+  await db.exec(`select book_appointment('${DONO}', '+5511966666666', 'Colado', 'corte', '${at(14, 50)}'::timestamptz)`);
   check('horario colado no anterior e aceito', true);
 } catch (e) { check('horario colado no anterior e aceito', false, e.message.slice(0, 60)); }
 
 // ---- 8. cancelar libera o horario ----
-await db.exec(`select cancel_appointment('+5511988124471', '${booked.id}'::text)`);
+await db.exec(`select cancel_appointment('${DONO}', '+5511988124471', '${booked.id}'::text)`);
 try {
-  await db.exec(`select book_appointment('+5511955555555', 'Substituto', 'corte', '${at(14)}'::timestamptz)`);
+  await db.exec(`select book_appointment('${DONO}', '+5511955555555', 'Substituto', 'corte', '${at(14)}'::timestamptz)`);
   check('cancelar libera o horario para outro', true);
 } catch (e) { check('cancelar libera o horario para outro', false, e.message.slice(0, 60)); }
 
 // ---- 9. ninguem cancela o corte do vizinho ----
-const stranger = await all(`select cancel_appointment('+5511900000000', '${booked.id}'::text) ok`);
+const stranger = await all(`select cancel_appointment('${DONO}', '+5511900000000', '${booked.id}'::text) ok`);
 check('telefone errado nao cancela', stranger.length === 0 || !stranger[0].ok);
 
 // ---- 10. disponibilidade ----
-const free = await all(`select starts_at from available_slots($1::date, 'corte')`, [day]);
+const free = await all(`select starts_at from available_slots('${DONO}', $1::date, 'corte')`, [day]);
 check('available_slots devolve horarios', free.length > 0, `${free.length} vagas`);
 
 const hhmm = (d) => new Date(d).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
@@ -116,20 +151,20 @@ check('ultimo corte cabe antes de fechar', times.at(-1) <= '18:30', times.at(-1)
 
 // ---- 11. bloqueio some da lista ----
 await db.exec(`insert into time_blocks (starts_at, ends_at, reason) values ('${at(10)}', '${at(11)}', 'Medico')`);
-const afterBlock = (await all(`select starts_at from available_slots($1::date, 'corte')`, [day])).map((r) => hhmm(r.starts_at));
+const afterBlock = (await all(`select starts_at from available_slots('${DONO}', $1::date, 'corte')`, [day])).map((r) => hhmm(r.starts_at));
 check('bloqueio remove os horarios', !afterBlock.includes('10:00') && !afterBlock.includes('10:30'));
 
 // ---- 12. domingo nao tem horario ----
-const sunday = await all(`select starts_at from available_slots('2027-03-14'::date, 'corte')`);
+const sunday = await all(`select starts_at from available_slots('${DONO}', '2027-03-14'::date, 'corte')`);
 check('domingo nao devolve nada', sunday.length === 0, `veio ${sunday.length}`);
 
 // ---- 13. dia no passado nao devolve nada ----
-const past = await all(`select starts_at from available_slots('2020-01-06'::date, 'corte')`);
+const past = await all(`select starts_at from available_slots('${DONO}', '2020-01-06'::date, 'corte')`);
 check('dia no passado nao devolve nada', past.length === 0, `veio ${past.length}`);
 
 // ---- 14. servico inexistente ----
 try {
-  await db.exec(`select book_appointment('+5511911111111', 'X', 'sobrancelha', '${at(9)}'::timestamptz)`);
+  await db.exec(`select book_appointment('${DONO}', '+5511911111111', 'X', 'sobrancelha', '${at(9)}'::timestamptz)`);
   check('servico inexistente e recusado', false, 'aceitou');
 } catch (e) { check('servico inexistente e recusado', /SERVICO_INEXISTENTE/.test(e.message), e.message.slice(0, 60)); }
 
@@ -243,7 +278,7 @@ const dia = '2026-09-14'; // segunda
 const passo = async (minutos) => {
   await db.exec(`update shop_settings set slot_step_minutes = ${minutos}`);
   const rows = await all(
-    `select starts_at from available_slots('${dia}'::date, 'corte')
+    `select starts_at from available_slots('${DONO}', '${dia}'::date, 'corte')
       order by starts_at limit 2`,
   );
   if (rows.length < 2) return null;
@@ -360,9 +395,9 @@ try { await db.exec(`update shop_settings set reminder_hours_before = 100`); } c
 check('janela absurda e recusada', horaAbsurda);
 
 // O id do horario viaja no botao da mensagem, entao o telefone tem que bater.
-const alheio = await one(`select confirm_appointment('+5511900000000', '${perto.id}'::text) ok`);
+const alheio = await one(`select confirm_appointment('${DONO}', '+5511900000000', '${perto.id}'::text) ok`);
 check('ninguem confirma o horario de outro', alheio.ok === null, String(alheio.ok));
-const dono = await one(`select confirm_appointment('+5511922222222', '${perto.id}'::text) ok`);
+const dono = await one(`select confirm_appointment('${DONO}', '+5511922222222', '${perto.id}'::text) ok`);
 check('o dono do numero confirma', dono.ok === true, String(dono.ok));
 const marca = await one(`select confirmed_at from appointments where id = '${perto.id}'`);
 check('a confirmacao fica gravada', marca.confirmed_at !== null);
@@ -592,6 +627,91 @@ check('e a lapide foi escrita pelo gatilho', lapide.n === 1, String(lapide.n));
 const risca = await comoPapel('authenticated',
   "delete from deleted_rows where row_id = 'apagar-me'");
 check('mas nao pode riscar a lapide', risca.erro !== null, risca.erro ?? 'RISCOU');
+
+// ---- 17. uma barbearia nao ve a outra ----
+//
+// E a unica pergunta que importa depois da 0017. Antes dela toda politica
+// dizia `using (true)`: dois barbeiros com o mesmo app enxergariam os
+// clientes, a agenda e o caixa um do outro.
+
+await db.exec(`insert into auth.users (id, email) values ('${VIZINHO}', 'vizinho@mispar.app')`);
+
+/// Fala como o barbeiro dado: papel `authenticated` e o crachá dele.
+const comoBarbeiro = async (quem, sql) => {
+  await comoUsuario(quem);
+  await db.exec('set role authenticated');
+  try {
+    return { linhas: (await db.query(sql)).rows, erro: null };
+  } catch (e) {
+    return { linhas: null, erro: e.message };
+  } finally {
+    await db.exec('reset role');
+    await comoUsuario(DONO);
+  }
+};
+
+// O vizinho monta a barbearia dele: mesmo id legivel de servico, outro dono.
+const montou = await comoBarbeiro(VIZINHO, `
+  insert into services (id, name, duration_minutes, price_cents)
+  values ('corte', 'Corte', 30, 5000) returning id`);
+check('duas barbearias podem ter um servico chamado corte',
+  montou.erro === null, montou.erro ?? 'ok');
+
+const meus = await comoBarbeiro(DONO, 'select count(*)::int n from clients');
+const dele = await comoBarbeiro(VIZINHO, 'select count(*)::int n from clients');
+check('o dono ve os clientes dele', (meus.linhas?.[0].n ?? 0) > 0,
+  JSON.stringify(meus.linhas));
+check('e o vizinho nao ve nenhum', dele.linhas?.[0].n === 0,
+  JSON.stringify(dele.linhas ?? dele.erro));
+
+const agendaDele = await comoBarbeiro(VIZINHO, 'select count(*)::int n from appointments');
+check('nem a agenda', agendaDele.linhas?.[0].n === 0,
+  JSON.stringify(agendaDele.linhas ?? agendaDele.erro));
+
+const caixaDele = await comoBarbeiro(VIZINHO, 'select count(*)::int n from expenses');
+check('nem o caixa', caixaDele.linhas?.[0].n === 0,
+  JSON.stringify(caixaDele.linhas ?? caixaDele.erro));
+
+// Escrever na barbearia do outro tambem nao: a linha existe, mas para ele nao.
+const mexeu = await comoBarbeiro(VIZINHO,
+  "update services set price_cents = 1 where id = 'corte-barba' returning id");
+check('e nao consegue mexer no catalogo do vizinho',
+  mexeu.erro === null && mexeu.linhas.length === 0,
+  mexeu.erro ?? `mexeu em ${mexeu.linhas?.length}`);
+
+// A cadeira e de cada um: os dois marcam as 14h do mesmo dia.
+const mesmaHora = '2027-05-10 14:00-03';
+await db.exec(`insert into shop_hours (owner_id, weekday, opens_at, closes_at)
+  values ('${VIZINHO}', 1, '08:00', '18:00')`);
+await db.exec(`insert into appointments (owner_id, service_id, starts_at, duration_minutes, price_cents, status)
+  values ('${DONO}', 'corte', '${mesmaHora}', 30, 4000, 'confirmed')`);
+
+let doisAsDuas = true;
+try {
+  await db.exec(`insert into appointments (owner_id, service_id, starts_at, duration_minutes, price_cents, status)
+    values ('${VIZINHO}', 'corte', '${mesmaHora}', 30, 5000, 'confirmed')`);
+} catch (e) {
+  doisAsDuas = false;
+  console.log('   ' + e.message);
+}
+check('duas barbearias marcam as 14h no mesmo dia', doisAsDuas);
+
+// E dentro de uma, a cadeira continua sendo uma so.
+let duasNaMesma = false;
+try {
+  await db.exec(`insert into appointments (owner_id, service_id, starts_at, duration_minutes, price_cents, status)
+    values ('${DONO}', 'corte', '${mesmaHora}', 30, 4000, 'confirmed')`);
+} catch { duasNaMesma = true; }
+check('mas duas pessoas nao sentam na mesma cadeira da mesma barbearia', duasNaMesma);
+
+// O robo de uma nao marca na agenda da outra, mesmo passando por cima da RLS.
+const doVizinho = await one(
+  `select book_appointment('${VIZINHO}', '+5511933333333', 'Cliente do vizinho', 'corte',
+     '2027-05-10 16:00-03'::timestamptz) id`);
+const ondeCaiu = await one(
+  `select owner_id from appointments where id = '${doVizinho.id}'`);
+check('o robo marca na barbearia que ele disser',
+  ondeCaiu.owner_id === VIZINHO, ondeCaiu.owner_id);
 
 console.log(failed === 0 ? '\nTUDO PASSOU' : `\n${failed} FALHA(S)`);
 process.exit(failed === 0 ? 0 : 1);

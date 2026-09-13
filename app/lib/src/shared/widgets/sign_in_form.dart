@@ -32,6 +32,10 @@ class _SignInFormState extends ConsumerState<SignInForm> {
   final _password = TextEditingController();
   bool _working = false;
 
+  /// Entrar é o padrão: quem abre esta tela quase sempre já tem conta — só
+  /// o primeiro dia de cada barbearia é cadastro.
+  bool _novo = false;
+
   @override
   void dispose() {
     _email.dispose();
@@ -44,13 +48,39 @@ class _SignInFormState extends ConsumerState<SignInForm> {
     widget.onBusy?.call(value);
   }
 
-  Future<void> _signIn() async {
+  Future<void> _enviar() async {
+    // A senha curta é o engano mais comum do cadastro, e o Supabase devolve
+    // isso em inglês falando de "password". Melhor dizer antes de ir à rede.
+    if (_novo && _password.text.length < 6) {
+      showSnack(context, 'A senha precisa de pelo menos 6 letras ou números.');
+      return;
+    }
+
     _busy(value: true);
 
     try {
-      await ref
-          .read(authRepositoryProvider)
-          .signIn(email: _email.text, password: _password.text);
+      final auth = ref.read(authRepositoryProvider);
+
+      if (_novo) {
+        final entrou = await auth.signUp(
+          email: _email.text,
+          password: _password.text,
+        );
+
+        await widget.onDone?.call();
+        if (!mounted) return;
+        _busy(value: false);
+        _password.clear();
+        showSnack(
+          context,
+          entrou
+              ? 'Conta criada. A cópia começa agora.'
+              : 'Conta criada. Confirme o e-mail para entrar.',
+        );
+        return;
+      }
+
+      await auth.signIn(email: _email.text, password: _password.text);
 
       await widget.onDone?.call();
       if (!mounted) return;
@@ -62,16 +92,19 @@ class _SignInFormState extends ConsumerState<SignInForm> {
       _busy(value: false);
       // A mensagem do Supabase vem em inglês e fala de "credentials". Quem lê
       // é o barbeiro, e o que ele precisa saber é o que digitar de novo.
-      showSnack(
-        context,
-        e.statusCode == '400'
-            ? 'E-mail ou senha não conferem.'
-            : 'Não consegui entrar. Tente de novo.',
-      );
+      showSnack(context, switch (e.statusCode) {
+        '400' when _novo => 'Esse e-mail não serve, ou já tem conta.',
+        '400' => 'E-mail ou senha não conferem.',
+        '422' => 'Já existe uma conta com esse e-mail.',
+        _ =>
+          _novo
+              ? 'Não consegui criar a conta. Tente de novo.'
+              : 'Não consegui entrar. Tente de novo.',
+      });
     } on Object {
       if (!mounted) return;
       _busy(value: false);
-      showSnack(context, 'Sem internet para entrar agora.');
+      showSnack(context, 'Sem internet agora.');
     }
   }
 
@@ -92,18 +125,22 @@ class _SignInFormState extends ConsumerState<SignInForm> {
           hint: 'senha',
           icon: Symbols.lock_rounded,
           obscure: true,
-          onSubmit: _signIn,
+          onSubmit: _enviar,
         ),
         const SizedBox(height: Dimens.gapLarge),
         FilledButton(
-          onPressed: _working ? null : () => unawaited(_signIn()),
+          onPressed: _working ? null : () => unawaited(_enviar()),
           child: _working
               ? const SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Entrar'),
+              : Text(_novo ? 'Criar conta' : 'Entrar'),
+        ),
+        TextButton(
+          onPressed: _working ? null : () => setState(() => _novo = !_novo),
+          child: Text(_novo ? 'Já tenho conta' : 'Ainda não tenho conta'),
         ),
       ],
     );
