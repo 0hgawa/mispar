@@ -96,6 +96,10 @@ class _SignInFormState extends ConsumerState<SignInForm> {
         '400' when _novo => 'Esse e-mail não serve, ou já tem conta.',
         '400' => 'E-mail ou senha não conferem.',
         '422' => 'Já existe uma conta com esse e-mail.',
+        // O servidor limita quantos e-mails de confirmação saem por hora.
+        // Mandar "tente de novo" aqui é mandar bater na mesma porta: só o
+        // tempo abre.
+        '429' => 'Muitas contas criadas agora. Tente daqui a alguns minutos.',
         _ =>
           _novo
               ? 'Não consegui criar a conta. Tente de novo.'
