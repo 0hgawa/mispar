@@ -273,7 +273,19 @@ check('cliente sem atendimento se apaga', gone.n === 0);
 
 // ---- o passo sai da tabela, nao do codigo ----
 // Sem isto, o app e o robo podem oferecer grades diferentes no mesmo dia.
-const dia = '2026-09-14'; // segunda
+// A proxima segunda, contada de hoje — e nao uma data escrita na mao.
+//
+// Estava fixa em 2026-09-14, e no dia 15 o teste comecou a falhar sozinho:
+// `available_slots` so oferece horario futuro, entao a segunda passada nao
+// devolve nada. Teste com data escrita na mao nao quebra, vence — e quem for
+// consertar vai procurar defeito no codigo que esta certo.
+const proximaSegunda = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
+  return d.toISOString().slice(0, 10);
+};
+
+const dia = proximaSegunda();
 
 const passo = async (minutos) => {
   await db.exec(`update shop_settings set slot_step_minutes = ${minutos}`);
